@@ -96,17 +96,17 @@ describe( 'setApiKey', () => {
 
 // ── initClient ────────────────────────────────────────────────────────────────
 
-describe( 'initClient', () => {
+describe( 'callInitClient', () => {
     it( 'returns true when stored key exists', async () => {
         vi.spyOn( mockContext.secrets, 'get' ).mockResolvedValue( 'stored-key' );
         const provider = new MistralChatModelProvider( mockContext, undefined, false );
-        expect( await provider[ 'initClient' ]( true ) ).toBe( true );
+        expect( await provider[ 'callInitClient' ]( true ) ).toBe( true );
     } );
 
     it( 'returns false in silent mode with no stored key', async () => {
         vi.spyOn( mockContext.secrets, 'get' ).mockResolvedValue( undefined );
         const provider = new MistralChatModelProvider( mockContext, undefined, false );
-        expect( await provider[ 'initClient' ]( true ) ).toBe( false );
+        expect( await provider[ 'callInitClient' ]( true ) ).toBe( false );
     } );
 
     it( 'prompts when not silent and no stored key', async () => {
@@ -115,7 +115,7 @@ describe( 'initClient', () => {
         vi.spyOn( mockContext.secrets, 'store' ).mockResolvedValue( undefined );
         const provider = new MistralChatModelProvider( mockContext, undefined, false );
         vi.spyOn( provider, 'validateApiKey' ).mockResolvedValue( true );
-        expect( await provider[ 'initClient' ]( false ) ).toBe( true );
+        expect( await provider[ 'callInitClient' ]( false ) ).toBe( true );
         expect( window.showInputBox ).toHaveBeenCalled();
     } );
 } );
