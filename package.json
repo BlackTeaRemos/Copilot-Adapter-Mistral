@@ -114,7 +114,7 @@
     "onChatParticipant:mistral-api-for-copilot-adapter.mistral"
   ],
   "dependencies": {
-    "@mistralai/mistralai": "2.2.0",
+    "@mistralai/mistralai": "2.2.5",
     "tiktoken": "^1.0.22"
   },
   "devDependencies": {
