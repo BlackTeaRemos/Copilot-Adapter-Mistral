@@ -1,0 +1,129 @@
+{
+  "name": "mistral-api-for-copilot-adapter",
+  "displayName": "Copilot Adapter - Mistral",
+  "version": "1.2.0",
+  "icon": ".github/asset/icon.png",
+  "description": "Access Mistral AI models within GitHub Copilot Chat",
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "keywords": [
+    "mistral",
+    "ai",
+    "copilot",
+    "chat",
+    "devstral",
+    "coding",
+    "code assistant"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BlackTeaRemos/Copilot-Adapter-Mistral.git"
+  },
+  "license": "MIT",
+  "qna": "marketplace",
+  "author": {
+    "name": "BlackTeaRemos",
+    "email": "9794561+BlackTeaRemos@users.noreply.github.com",
+    "url": "https://github.com/BlackTeaRemos"
+  },
+  "publisher": "BlackTeaRemos",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "tsdown && node -e \"require('fs').renameSync('dist/extension.cjs', 'dist/extension.js'); require('fs').renameSync('dist/extension.cjs.map', 'dist/extension.js.map')\"",
+    "build:prod": "NODE_ENV=production tsdown && node -e \"require('fs').renameSync('dist/extension.cjs', 'dist/extension.js'); require('fs').renameSync('dist/extension.cjs.map', 'dist/extension.js.map')\"",
+    "check": "tsgo --noEmit",
+    "test": "vitest run src",
+    "watch": "tsdown --watch"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "mistral-adapter.manageApiKey",
+        "title": "Mistral: Manage API Key"
+      }
+    ],
+    "languageModelChatProviders": [
+      {
+        "vendor": "mistral",
+        "displayName": "Mistral AI",
+        "configuration": {
+          "managementCommand": "mistral-adapter.manageApiKey"
+        }
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "mistral-api-for-copilot-adapter.mistral",
+        "name": "mistral",
+        "fullName": "Mistral AI",
+        "description": "Chat with a Mistral AI model",
+        "isSticky": true
+      }
+    ],
+    "configuration": {
+      "title": "Mistral Models",
+      "properties": {
+        "mistral.apiKey": {
+          "type": "string",
+          "description": "Mistral API key (alternative to using the command)",
+          "order": 1
+        },
+        "mistral.defaultModel": {
+          "type": "string",
+          "description": "Default model to use for chat",
+          "default": "mistral-large-latest",
+          "order": 2
+        },
+        "mistral.temperature": {
+          "type": "number",
+          "description": "Default temperature for completions",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 1,
+          "order": 3
+        },
+        "mistral.maxTokens": {
+          "type": "number",
+          "description": "Default maximum tokens for completions",
+          "default": 4096,
+          "minimum": 1,
+          "order": 4
+        },
+        "mistral.baseUrl": {
+          "type": "string",
+          "description": "Custom Mistral API base URL (for self-hosted or Azure)",
+          "order": 5
+        },
+        "mistral.thinkingSupport": {
+          "type": "boolean",
+          "description": "Enable thinking tag extraction for supported models",
+          "default": true,
+          "order": 6
+        }
+      }
+    }
+  },
+  "enabledApiProposals": [
+    "languageModelPricing"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguageModelChatProvider:mistral",
+    "onChatParticipant:mistral-api-for-copilot-adapter.mistral"
+  ],
+  "dependencies": {
+    "@mistralai/mistralai": "2.2.0",
+    "tiktoken": "^1.0.22"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/vscode": "^1.109.0",
+    "tsdown": "*",
+    "vitest": "^4.1.4"
+  },
+  "engines": {
+    "vscode": "^1.109.0"
+  }
+}
