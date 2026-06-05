@@ -116,7 +116,7 @@
   ],
   "dependencies": {
     "@mistralai/mistralai": "2.2.0",
-    "tiktoken": "^1.0.22"
+    "js-tiktoken": "^1.0.21"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

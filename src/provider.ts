@@ -1,7 +1,6 @@
 import { Mistral } from '@mistralai/mistralai';
 import type { CompletionEvent } from '@mistralai/mistralai/models/components';
-import { Tiktoken } from 'tiktoken/lite';
-import cl100k_base from 'tiktoken/encoders/cl100k_base.json';
+import { type Tiktoken, getEncoding } from 'js-tiktoken';
 import {
     CancellationToken,
     Event,
@@ -321,11 +320,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         _token: CancellationToken,
     ): Promise<number> {
         if ( !this.tokenizer ) {
-            this.tokenizer = new Tiktoken(
-                cl100k_base.bpe_ranks,
-                cl100k_base.special_tokens,
-                cl100k_base.pat_str,
-            );
+            this.tokenizer = getEncoding( 'cl100k_base' );
         }
 
         let textContent = '';
