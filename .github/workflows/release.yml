@@ -32,7 +32,7 @@ jobs:
         run: bun run build:prod
 
       - name: Package VSIX
-        run: bunx vsce package --no-dependencies
+        run: bunx vsce package --no-dependencies --allow-all-proposed-apis
 
       - name: Get VSIX filename
         id: vsix
@@ -45,6 +45,6 @@ jobs:
           generate_release_notes: true
 
       - name: Publish to VS Marketplace
-        run: bunx vsce publish --no-dependencies --packagePath ${{ steps.vsix.outputs.file }}
+        run: bunx vsce publish --no-dependencies --allow-all-proposed-apis --packagePath ${{ steps.vsix.outputs.file }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
