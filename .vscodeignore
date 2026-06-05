@@ -12,7 +12,6 @@ tsconfig.json
 vitest.config.js
 oxlint.config.js
 CHANGELOG.md
-LICENSE.md
 README.md
 node_modules/**
 *.map

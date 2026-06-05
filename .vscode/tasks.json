@@ -25,6 +25,34 @@
             "presentation": {
                 "reveal": "never"
             }
+        },
+        {
+            "label": "Release: bump patch",
+            "type": "shell",
+            "command": "node scripts/bump.mjs patch",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Release: bump minor",
+            "type": "shell",
+            "command": "node scripts/bump.mjs minor",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Release: bump major",
+            "type": "shell",
+            "command": "node scripts/bump.mjs major",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Release: bump pre-release",
+            "type": "shell",
+            "command": "node scripts/bump.mjs pre",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
         }
     ]
 }

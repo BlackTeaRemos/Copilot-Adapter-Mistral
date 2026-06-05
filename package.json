@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Copilot Adapter - Mistral",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "icon": ".github/asset/icon.png",
   "description": "Mistral API integration for Copilot",
   "categories": [
@@ -39,7 +39,11 @@
     "build:prod": "NODE_ENV=production tsdown && node -e \"const fs=require('fs'); fs.renameSync('dist/extension.cjs', 'dist/extension.js'); if(fs.existsSync('dist/extension.cjs.map')) fs.renameSync('dist/extension.cjs.map', 'dist/extension.js.map');\"",
     "check": "tsc --noEmit",
     "test": "vitest run src",
-    "watch": "tsdown --watch"
+    "watch": "tsdown --watch",
+    "bump:patch": "node scripts/bump.mjs patch",
+    "bump:minor": "node scripts/bump.mjs minor",
+    "bump:major": "node scripts/bump.mjs major",
+    "bump:pre": "node scripts/bump.mjs pre"
   },
   "contributes": {
     "commands": [
