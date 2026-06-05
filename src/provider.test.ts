@@ -15,6 +15,12 @@ const mockContext = {
         delete: vi.fn().mockResolvedValue( undefined ),
         onDidChange: vi.fn(),
     },
+    globalState: {
+        get: vi.fn().mockReturnValue( {} ),
+        update: vi.fn().mockResolvedValue( undefined ),
+        keys: vi.fn().mockReturnValue( [] ),
+        setKeysForSync: vi.fn(),
+    },
     subscriptions: [],
 } as any;
 
@@ -166,7 +172,7 @@ describe( 'provideLanguageModelChatResponse', () => {
         await provider.provideLanguageModelChatResponse(
             baseModel, [ userMsg( new LanguageModelTextPart( 'hi' ) ) ], {} as any, { report: vi.fn() } as any, noCancel,
         );
-        expect( provider.getUsageStats() ).toEqual( { input: 10, output: 5, cached: 0 } );
+        expect( provider.getUsageStats() ).toEqual( { input: 10, output: 5, cached: 0, lastPrompt: 10 } );
     } );
 
     it( 'reports error text on stream failure', async () => {

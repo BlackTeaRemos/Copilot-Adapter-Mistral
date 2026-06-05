@@ -45,6 +45,7 @@ export function processStreamEvent (
         const completion = chunk.usage.completionTokens ?? 0;
         const total = chunk.usage.totalTokens;
         ctx.usage.input = Math.max( ctx.usage.input, prompt );
+        ctx.usage.lastPrompt = prompt;
         ctx.usage.output += completion;
         // Streaming chunk.usage is the plain UsageInfo type, which carries cache fields only via its
         // catchall (raw snake_case). Mistral has used several shapes across versions — try each.
