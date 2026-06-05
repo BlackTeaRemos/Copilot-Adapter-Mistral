@@ -1,0 +1,28 @@
+{
+    "models": [
+        { "match": "mistral-large-latest",        "label": "Mistral Large 3",     "inputPer1M": 0.50, "outputPer1M": 1.50, "tier": "Flagship",  "priceCategory": "medium" },
+        { "match": "mistral-medium-3-5",           "label": "Mistral Medium 3.5",  "inputPer1M": 0.40, "outputPer1M": 2.00, "tier": "Flagship",  "priceCategory": "high"   },
+        { "match": "mistral-medium-latest",        "label": "Mistral Medium 3",    "inputPer1M": 0.40, "outputPer1M": 2.00, "tier": "Flagship",  "priceCategory": "high"   },
+        { "match": "mistral-small-latest",         "label": "Mistral Small 4",     "inputPer1M": 0.15, "outputPer1M": 0.60, "tier": "Flagship",  "priceCategory": "low"    },
+        { "match": "mistral-small-2603",           "label": "Mistral Small 4",     "inputPer1M": 0.15, "outputPer1M": 0.60, "tier": "Flagship",  "priceCategory": "low"    },
+        { "match": "devstral-latest",              "label": "Devstral Medium",     "inputPer1M": 0.40, "outputPer1M": 2.00, "tier": "Code",      "priceCategory": "high"   },
+        { "match": "devstral-medium-latest",       "label": "Devstral Medium",     "inputPer1M": 0.40, "outputPer1M": 2.00, "tier": "Code",      "priceCategory": "high"   },
+        { "match": "codestral-latest",             "label": "Codestral",           "inputPer1M": 0.30, "outputPer1M": 0.90, "tier": "Code",      "priceCategory": "medium" },
+        { "match": "voxtral-small-latest",         "label": "Voxtral Small",       "inputPer1M": 0.10, "outputPer1M": 0.30, "tier": "Code",      "priceCategory": "low"    },
+        { "match": "voxtral-small-2507",           "label": "Voxtral Small",       "inputPer1M": 0.10, "outputPer1M": 0.30, "tier": "Code",      "priceCategory": "low"    },
+        { "match": "voxtral-mini-latest",          "label": "Voxtral Mini",        "inputPer1M": 0.04, "outputPer1M": 0.04, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "voxtral-mini-2507",            "label": "Voxtral Mini",        "inputPer1M": 0.04, "outputPer1M": 0.04, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "magistral-medium-latest",      "label": "Magistral Medium",    "inputPer1M": 2.00, "outputPer1M": 5.00, "tier": "Reasoning", "priceCategory": "very_high" },
+        { "match": "magistral-medium-2509",        "label": "Magistral Medium",    "inputPer1M": 2.00, "outputPer1M": 5.00, "tier": "Reasoning", "priceCategory": "very_high" },
+        { "match": "magistral-small-latest",       "label": "Magistral Small",     "inputPer1M": 0.50, "outputPer1M": 1.50, "tier": "Reasoning", "priceCategory": "medium" },
+        { "match": "magistral-small-2509",         "label": "Magistral Small",     "inputPer1M": 0.50, "outputPer1M": 1.50, "tier": "Reasoning", "priceCategory": "medium" },
+        { "match": "ministral-14b-latest",         "label": "Ministral 14B",       "inputPer1M": 0.20, "outputPer1M": 0.20, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "ministral-14b-2512",           "label": "Ministral 14B",       "inputPer1M": 0.20, "outputPer1M": 0.20, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "ministral-8b-latest",          "label": "Ministral 8B",        "inputPer1M": 0.15, "outputPer1M": 0.15, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "ministral-8b-2512",            "label": "Ministral 8B",        "inputPer1M": 0.15, "outputPer1M": 0.15, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "ministral-3b-latest",          "label": "Ministral 3B",        "inputPer1M": 0.10, "outputPer1M": 0.10, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "ministral-3b-2512",            "label": "Ministral 3B",        "inputPer1M": 0.10, "outputPer1M": 0.10, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "open-mistral-nemo",            "label": "Mistral NeMo",        "inputPer1M": 0.15, "outputPer1M": 0.15, "tier": "Edge",      "priceCategory": "low"    },
+        { "match": "labs-leanstral",               "label": "Labs Leanstral",      "inputPer1M": 0.15, "outputPer1M": 0.60, "tier": "Labs",      "priceCategory": "low"    }
+    ]
+}

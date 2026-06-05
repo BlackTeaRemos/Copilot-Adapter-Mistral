@@ -1,0 +1,22 @@
+{
+	"include": [
+		"src/**/*.ts"
+	],
+	"compilerOptions": {
+		"module": "Preserve",
+		"moduleResolution": "bundler",
+		"target": "esnext",
+		"lib": [
+			"ESNext"
+		],
+		"types": [
+			"node",
+			"vscode"
+		],
+		"sourceMap": true,
+		"rootDir": "src",
+		"strict": true,
+		"outDir": "out",
+		"skipLibCheck": true
+	}
+}
