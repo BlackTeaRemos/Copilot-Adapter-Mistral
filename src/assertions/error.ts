@@ -1,5 +1,3 @@
-import { MistralError } from '@mistralai/mistralai/models/errors';
-
 export type ErrorLike = {
     statusCode?: number;
     name?: string;
@@ -11,9 +9,6 @@ export function isErrorLike ( val: unknown ): val is ErrorLike {
 }
 
 export function getStatusCode ( error: unknown ): number | undefined {
-    // Prefer the SDK's typed error: MistralError sets statusCode from httpMeta.response.status.
-    if ( error instanceof MistralError ) { return error.statusCode; }
-    // Fallback: duck-type non-SDK throws that still carry a numeric statusCode.
     if ( !isErrorLike( error ) ) { return undefined; }
     const code = ( error as Record<string, unknown> )[ 'statusCode' ];
     return typeof code === 'number' ? code : undefined;

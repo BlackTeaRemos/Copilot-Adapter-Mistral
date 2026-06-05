@@ -15,6 +15,4 @@ CHANGELOG.md
 LICENSE.md
 README.md
 node_modules/**
-!node_modules/@mistralai/**
-!node_modules/base64-js/**
 *.map

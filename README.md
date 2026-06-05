@@ -95,3 +95,5 @@ This extension is not affiliated with, endorsed by, or associated with Mistral A
 ## License
 
 MIT License - See [LICENSE](LICENSE) for details.
+
+This extension bundles third-party open-source packages. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for their licenses and attributions.
