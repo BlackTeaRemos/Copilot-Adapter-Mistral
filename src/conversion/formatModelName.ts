@@ -31,5 +31,5 @@ export function getChatModelInfo ( model: MistralModel ): LanguageModelChatInfor
             toolCalling: model.toolCalling,
             imageInput: model.supportsVision ?? false,
         },
-    } as LanguageModelChatInformation;
+    } as unknown as LanguageModelChatInformation;
 }

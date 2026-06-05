@@ -109,9 +109,6 @@
       }
     }
   },
-  "enabledApiProposals": [
-    "languageModelPricing"
-  ],
   "activationEvents": [
     "onStartupFinished",
     "onLanguageModelChatProvider:mistral",
