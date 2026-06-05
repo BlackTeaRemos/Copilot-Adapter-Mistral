@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Copilot Adapter - Mistral",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "icon": ".github/asset/icon.png",
   "description": "Mistral API integration for Copilot",
   "categories": [
@@ -116,7 +116,7 @@
   ],
   "dependencies": {
     "@mistralai/mistralai": "2.2.0",
-    "tiktoken": "^1.0.22"
+    "js-tiktoken": "^1.0.21"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
