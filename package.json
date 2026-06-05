@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Copilot Adapter - Mistral",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "icon": ".github/asset/icon.png",
   "description": "Mistral API integration for Copilot",
   "categories": [
@@ -119,14 +119,14 @@
     "onChatParticipant:mistral-api-for-copilot-adapter.mistral"
   ],
   "dependencies": {
-    "@mistralai/mistralai": "2.2.0",
+    "@mistralai/mistralai": "2.2.5",
     "js-tiktoken": "^1.0.21"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "@types/vscode": "^1.109.0",
     "@vscode/vsce": "^3.6.0",
-    "tsdown": "*",
+    "tsdown": "^0.22.2",
     "typescript": "^5.8.3",
     "vitest": "^4.1.4"
   },

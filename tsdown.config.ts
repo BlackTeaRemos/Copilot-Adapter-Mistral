@@ -7,8 +7,8 @@ export default defineConfig( {
   outDir: 'dist',
   format: 'cjs',
   platform: 'node',
-  external: [ 'vscode' ],
   deps: {
+    neverBundle: [ 'vscode' ],
     alwaysBundle: [ '@mistralai/mistralai', 'js-tiktoken' ],
   },
   inputOptions: ( options ) => {

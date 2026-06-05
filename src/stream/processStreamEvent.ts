@@ -46,8 +46,15 @@ export function processStreamEvent (
         const total = chunk.usage.totalTokens;
         ctx.usage.input = Math.max( ctx.usage.input, prompt );
         ctx.usage.output += completion;
+        // Streaming chunk.usage is the plain UsageInfo type, which carries cache fields only via its
+        // catchall (raw snake_case). Mistral has used several shapes across versions — try each.
+        const rawUsage = chunk.usage as Record<string, unknown>;
+        const detail = ( rawUsage[ 'prompt_tokens_details' ] ?? rawUsage[ 'prompt_token_details' ] ) as
+            { cached_tokens?: number; } | undefined;
+        const cached = detail?.cached_tokens ?? ( rawUsage[ 'num_cached_tokens' ] as number | undefined ) ?? 0;
+        if ( cached > 0 ) { ctx.usage.cached = Math.max( ctx.usage.cached, cached ); }
         log.debug(
-            `[Mistral] token usage — prompt: ${ prompt }, completion: ${ completion }` +
+            `[Mistral] token usage — prompt: ${ prompt }, completion: ${ completion }, cached: ${ cached }` +
             ( total !== undefined ? `, total: ${ total }` : '' ),
         );
     }

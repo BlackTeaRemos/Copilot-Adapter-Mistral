@@ -36,7 +36,7 @@ export type MistralMessage =
 
 export type ToolCallBuffer = { name?: string; argsText: string; };
 
-export type UsageStats = { input: number; output: number; };
+export type UsageStats = { input: number; output: number; cached: number; };
 
 export type ToolCallIdMap = {
     vsCodeToMistral: Map<string, string>;

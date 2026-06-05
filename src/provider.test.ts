@@ -166,7 +166,7 @@ describe( 'provideLanguageModelChatResponse', () => {
         await provider.provideLanguageModelChatResponse(
             baseModel, [ userMsg( new LanguageModelTextPart( 'hi' ) ) ], {} as any, { report: vi.fn() } as any, noCancel,
         );
-        expect( provider.getUsageStats() ).toEqual( { input: 10, output: 5 } );
+        expect( provider.getUsageStats() ).toEqual( { input: 10, output: 5, cached: 0 } );
     } );
 
     it( 'reports error text on stream failure', async () => {
