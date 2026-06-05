@@ -46,7 +46,12 @@ jobs:
         run: bun run build:prod
 
       - name: Package VSIX
-        run: bunx vsce package --no-dependencies
+        run: |
+          if [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]]; then
+            bunx vsce package --no-dependencies --pre-release
+          else
+            bunx vsce package --no-dependencies
+          fi
 
       - name: Get VSIX filename
         id: vsix
