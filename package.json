@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Mistral Models for Copilot Chat",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "icon": ".github/asset/icon.png",
   "description": "Mistral Models integration for Copilot Chat",
   "categories": [
@@ -50,6 +50,14 @@
       {
         "command": "mistral-adapter.manageApiKey",
         "title": "Mistral: Manage API Key"
+      },
+      {
+        "command": "mistral-adapter.selectInlineCompletionModel",
+        "title": "Mistral: Select Inline Completion Model"
+      },
+      {
+        "command": "mistral-adapter.toggleInlineCompletions",
+        "title": "Mistral: Toggle Inline Completions (Mistral FIM ↔ Copilot)"
       }
     ],
     "languageModelChatProviders": [
@@ -109,6 +117,18 @@
           "description": "Enable thinking tag extraction for supported models",
           "default": true,
           "order": 6
+        },
+        "mistral.inlineCompletionModel": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Model ID for inline code completions (ghost text) served directly by Mistral's Fill-in-the-Middle API. Empty string = disabled (defer to other providers like Copilot). Set to a FIM-capable model (e.g. `codestral-latest`). Use the __\"Mistral: Select Inline Completion Model\"__ command to pick from fetched models. Usage is logged to the Mistral output channel.",
+          "order": 7
+        },
+        "mistral.inlineCompletionEnabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "When enabled, Mistral FIM provides inline completions and Copilot's inline suggestions are disabled (`github.copilot.enable` set to `{ \"*\": false }`). Toggle via the status bar button or the __\"Mistral: Toggle Inline Completions\"__ command, which automatically restores Copilot when turned off.",
+          "order": 8
         }
       }
     }

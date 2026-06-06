@@ -12,6 +12,7 @@ export interface MistralModel {
     toolCalling: boolean;
     supportsParallelToolCalls: boolean;
     supportsVision?: boolean;
+    supportsCompletionFim: boolean;
     temperature?: number;
     top_p?: number;
 }
@@ -53,6 +54,7 @@ export type RawModel = {
     toolCalling: boolean;
     supportsParallelToolCalls: boolean;
     supportsVision: boolean;
+    supportsCompletionFim: boolean;
     temperature?: number;
 };
 

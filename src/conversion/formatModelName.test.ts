@@ -25,6 +25,7 @@ describe( 'getChatModelInfo', () => {
         toolCalling: true,
         supportsParallelToolCalls: true,
         supportsVision: true,
+        supportsCompletionFim: false,
     };
 
     it( 'maps all fields', () => {

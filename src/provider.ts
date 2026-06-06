@@ -167,7 +167,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             id: model.id, name: model.name,
             maxInputTokens: model.maxInputTokens, maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
             defaultCompletionTokens: DEFAULT_COMPLETION_TOKENS,
-            toolCalling: true, supportsParallelToolCalls: false, supportsVision: false,
+            toolCalling: true, supportsParallelToolCalls: false, supportsVision: false, supportsCompletionFim: false,
         };
 
         const mistralMessages = toMistralMessages( messages, this.toolCallIdMap );
@@ -317,5 +317,18 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
     public getUsageStats (): UsageStats {
         return { ...this.tokensUsedThisSession };
+    }
+
+    public getClient (): Mistral | null {
+        return this.client;
+    }
+
+    public async ensureClient ( silent: boolean = true ): Promise<Mistral | null> {
+        if ( this.initPromise ) {
+            try { await this.initPromise; } catch { }
+            this.initPromise = undefined;
+        }
+        if ( !this.client ) { await this.callInitClient( silent ); }
+        return this.client;
     }
 }

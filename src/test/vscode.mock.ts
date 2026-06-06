@@ -129,8 +129,36 @@ export const commands = {
 export const workspace = {
     getConfiguration: vi.fn().mockReturnValue( {
         get: vi.fn().mockReturnValue( undefined ),
+        update: vi.fn(),
     } ),
+    onDidChangeConfiguration: vi.fn().mockReturnValue( { dispose: vi.fn() } ),
 };
+
+export const languages = {
+    registerInlineCompletionItemProvider: vi.fn().mockReturnValue( { dispose: vi.fn() } ),
+};
+
+export enum ConfigurationTarget {
+    Global = 1,
+    Workspace = 2,
+    WorkspaceFolder = 3,
+}
+
+export class Position {
+    constructor ( public readonly line: number, public readonly character: number ) { }
+}
+
+export class Range {
+    constructor ( public readonly start: Position, public readonly end: Position ) { }
+}
+
+export class InlineCompletionItem {
+    constructor ( public readonly insertText: string, public readonly range?: Range ) { }
+}
+
+export class ThemeColor {
+    constructor ( public readonly id: string ) { }
+}
 
 export enum StatusBarAlignment {
     Left = 1,

@@ -89,6 +89,7 @@ export async function fetchModels (
                 toolCalling: m.capabilities?.functionCalling ?? false,
                 supportsParallelToolCalls: m.capabilities?.functionCalling ?? false,
                 supportsVision: m.capabilities?.vision ?? false,
+                supportsCompletionFim: m.capabilities?.completionFim ?? false,
                 temperature: m.defaultModelTemperature ?? undefined,
             } ) );
 
@@ -107,6 +108,7 @@ export async function fetchModels (
             toolCalling: rawModel.toolCalling,
             supportsParallelToolCalls: rawModel.supportsParallelToolCalls,
             supportsVision: rawModel.supportsVision,
+            supportsCompletionFim: rawModel.supportsCompletionFim,
             temperature: rawModel.temperature,
         } ) );
     } catch ( error ) {

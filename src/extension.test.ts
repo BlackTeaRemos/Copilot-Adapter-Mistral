@@ -61,17 +61,18 @@ describe( 'extension', () => {
             expect( commands.registerCommand ).toHaveBeenCalledWith( 'mistral-adapter.manageApiKey', expect.any( Function ) );
         } );
 
-        it( 'pushes exactly 3 disposables into context.subscriptions (provider + command + dispose handler)', () => {
+        it( 'pushes provider + 2 commands + dispose handler bundled in first push call', () => {
             activate( mockContext );
-            // First push call is provider + command + dispose handler bundled together
-            expect( mockContext.subscriptions.push.mock.calls[ 0 ] ).toHaveLength( 3 );
+            // First push call is provider + manageApiKey + selectInlineCompletionModel + dispose handler
+            expect( mockContext.subscriptions.push.mock.calls[ 0 ] ).toHaveLength( 4 );
         } );
 
         it( 'creates output channel and status bar and tracks them in subscriptions', () => {
             activate( mockContext );
             expect( window.createOutputChannel ).toHaveBeenCalledWith( 'Mistral Models', { log: true } );
             expect( window.createStatusBarItem ).toHaveBeenCalled();
-            expect( mockContext.subscriptions.push.mock.calls[ 1 ] ).toHaveLength( 2 );
+            // push call index 5: output channel + status bar (after bundle, inline register, toggle statusbar, toggle command, config watcher)
+            expect( mockContext.subscriptions.push.mock.calls[ 5 ] ).toHaveLength( 2 );
         } );
 
         it( 'creates the @mistral chat participant', () => {
@@ -81,9 +82,9 @@ describe( 'extension', () => {
 
         it( 'pushes participant disposable into context.subscriptions', () => {
             activate( mockContext );
-            // Third push call is the participant (after provider+command+dispose and output/status items)
-            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 3 );
-            expect( mockContext.subscriptions.push.mock.calls[ 2 ] ).toHaveLength( 1 );
+            // 7 push calls: bundle, inline register, toggle statusbar, toggle command, config watcher, output+status, participant
+            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 7 );
+            expect( mockContext.subscriptions.push.mock.calls[ 6 ] ).toHaveLength( 1 );
         } );
     } );
 
