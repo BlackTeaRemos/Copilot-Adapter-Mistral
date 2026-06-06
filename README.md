@@ -22,15 +22,15 @@
 
 ### Model Selection
 
-![Model Selection](.github/assets/target_1_model_selection.gif)
+![Model Selection](https://raw.githubusercontent.com/BlackTeaRemos/Copilot-Adapter-Mistral/main/.github/asset/TARGET_1.gif)
 
 ### Tooling Integration
 
-![Tooling Integration](.github/assets/target_2_tooling_integration.gif)
+![Tooling Integration](https://raw.githubusercontent.com/BlackTeaRemos/Copilot-Adapter-Mistral/main/.github/asset/TARGET_2.gif)
 
 ### Real-time Data Display
 
-![Real-time Data](.github/assets/target_3_realtime_data.gif)
+![Real-time Data](https://raw.githubusercontent.com/BlackTeaRemos/Copilot-Adapter-Mistral/main/.github/asset/TARGET_3.gif)
 
 ## Why?
 
