@@ -78,7 +78,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
     ) {
         this.log = logOutputChannel ?? {
             info: () => { }, debug: () => { }, warn: () => { }, error: () => { },
-            appendLine: () => { }, dispose: () => { },
+            trace: () => { }, appendLine: () => { }, dispose: () => { },
         } as unknown as LogOutputChannel;
         this.calibration = new TokenizerCalibration( context );
         this.log.info( '[Mistral] Provider constructed' );
@@ -120,6 +120,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         if ( !this.client ) { return []; }
         this.fetchedModels = await fetchModels( this.client, this.log );
         this.modelCacheTimestamp = now;
+        this.log.debug( '[Mistral] Fetched models: ' + JSON.stringify( this.fetchedModels, null, 2 ) );
         return this.fetchedModels;
     }
 
@@ -142,6 +143,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
         const models = await this.fetchModels();
         this.log.info( '[Mistral] Returning ' + models.length + ' models' );
+        this.log.debug( '[Mistral] Returning model info: ' + JSON.stringify( models.map( model => getChatModelInfo( model ) ), null, 2 ) );
         return models.map( model => getChatModelInfo( model ) );
     }
 
@@ -228,40 +230,11 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             if ( !token.isCancellationRequested ) {
                 flushContentDeltaState( ctx.contentState, this.log );
                 const { input, output, cached, lastPrompt } = this.tokensUsedThisSession;
-                progress.report( new LanguageModelDataPart(
-                    new TextEncoder().encode( JSON.stringify( {
-                        prompt_tokens: input, completion_tokens: output,
-                        total_tokens: input + output,
-                        prompt_tokens_details: { cached_tokens: cached },
-                    } ) ),
-                    'usage',
-                ) );
-
-                if ( !this.tokenizer ) { this.tokenizer = getEncoding( 'cl100k_base' ); }
-                const requestTiktoken = messages
-                    .flatMap( m => m.content )
-                    .map( part => extractText( part as any ) )
-                    .reduce( ( sum, s ) => sum + this.tokenizer!.encode( s ).length, 0 );
-                this.calibration.record( model.id, lastPrompt, requestTiktoken );
-
-                if ( cached > 0 ) {
-                    const denom = lastPrompt > 0 ? lastPrompt : input;
-                    const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
-                    const saved = Math.round( cached * 0.9 );
-                    this.log.info(
-                        `[Mistral] prompt cache hit — cached=${ cached }/${ denom } prompt tokens (${ pct }%), ~${ saved } billed-token equivalent saved (calibration samples: ${ this.calibration.sampleCount( model.id ) })`,
-                    );
-                }
-                if ( ctx.truncated ) {
-                    progress.report( new LanguageModelTextPart(
-                        `\n\n⚠️ Response truncated — output hit the token limit (${ foundModel.defaultCompletionTokens } tokens). Consider increasing maxTokens or shortening context.`,
-                    ) );
-                }
-                if ( ctx.servedModel && ctx.servedModel !== model.id ) {
-                    this.log.info( `[Mistral] model redirect: requested=${ model.id } served=${ ctx.servedModel }` );
-                    this.lastModelName = ctx.servedModel;
-                    this.lastModelId = ctx.servedModel;
-                }
+                this.reportTokenUsage( progress, this.tokensUsedThisSession );
+                this.recordCalibration( model.id, lastPrompt, messages );
+                this.logCacheHit( cached, lastPrompt, input, model.id );
+                if ( ctx.truncated ) { this.reportTruncationWarning( progress, foundModel ); }
+                this.logModelRedirect( ctx, model.id );
             }
             this.log.debug(
                 `[Mistral] stream complete — model=${ ctx.servedModel ?? model.id } input=${ this.tokensUsedThisSession.input } output=${ this.tokensUsedThisSession.output } cached=${ this.tokensUsedThisSession.cached }` +
@@ -288,6 +261,51 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         const raw = this.tokenizer.encode( textContent ).length;
         const scale = this.calibration.scale( model.id );
         return scale !== undefined ? Math.round( raw * scale ) : raw;
+    }
+
+    private reportTokenUsage ( progress: Progress<LanguageModelResponsePart>, usage: UsageStats ): void {
+        progress.report( new LanguageModelDataPart(
+            new TextEncoder().encode( JSON.stringify( {
+                prompt_tokens: usage.input, completion_tokens: usage.output,
+                total_tokens: usage.input + usage.output,
+                prompt_tokens_details: { cached_tokens: usage.cached },
+            } ) ),
+            'usage',
+        ) );
+    }
+
+    private recordCalibration ( modelId: string, lastPrompt: number, messages: Array<LanguageModelChatMessage> ): void {
+        if ( !this.tokenizer ) { this.tokenizer = getEncoding( 'cl100k_base' ); }
+        const requestTiktoken = messages
+            .flatMap( m => m.content )
+            .map( part => extractText( part as any ) )
+            .reduce( ( sum, s ) => sum + this.tokenizer!.encode( s ).length, 0 );
+        this.calibration.record( modelId, lastPrompt, requestTiktoken );
+    }
+
+    private logCacheHit ( cached: number, lastPrompt: number, input: number, modelId: string ): void {
+        if ( cached > 0 ) {
+            const denom = lastPrompt > 0 ? lastPrompt : input;
+            const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
+            const saved = Math.round( cached * 0.9 );
+            this.log.info(
+                `[Mistral] prompt cache hit — cached=${ cached }/${ denom } prompt tokens (${ pct }%), ~${ saved } billed-token equivalent saved (calibration samples: ${ this.calibration.sampleCount( modelId ) })`,
+            );
+        }
+    }
+
+    private reportTruncationWarning ( progress: Progress<LanguageModelResponsePart>, foundModel: MistralModel ): void {
+        progress.report( new LanguageModelTextPart(
+            `\n\n⚠️ Response truncated — output hit the token limit (${ foundModel.defaultCompletionTokens } tokens). Consider increasing maxTokens or shortening context.`,
+        ) );
+    }
+
+    private logModelRedirect ( ctx: StreamContext, modelId: string ): void {
+        if ( ctx.servedModel && ctx.servedModel !== modelId ) {
+            this.log.info( `[Mistral] model redirect: requested=${ modelId } served=${ ctx.servedModel }` );
+            this.lastModelName = ctx.servedModel;
+            this.lastModelId = ctx.servedModel;
+        }
     }
 
     public dispose (): void {

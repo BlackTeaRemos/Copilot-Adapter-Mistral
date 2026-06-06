@@ -104,6 +104,7 @@ export const window = {
         debug: vi.fn(),
         warn: vi.fn(),
         error: vi.fn(),
+        trace: vi.fn(),
         appendLine: vi.fn(),
         dispose: vi.fn(),
     } ),

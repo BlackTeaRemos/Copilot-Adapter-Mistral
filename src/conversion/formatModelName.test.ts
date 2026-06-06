@@ -50,4 +50,23 @@ describe( 'getChatModelInfo', () => {
         const { supportsVision: _, ...noVision } = base;
         expect( getChatModelInfo( noVision as any ).capabilities?.imageInput ).toBe( false );
     } );
+
+    it( 'uses tier for detail field instead of pricing', () => {
+        const modelWithPricing = getChatModelInfo( {
+            ...base,
+            id: 'mistral-large-latest',
+        } );
+        expect( modelWithPricing.detail ).toBe( 'Flagship' );
+        // The pricing field is set as a custom property, so we check it exists and contains tier info
+        expect( ( modelWithPricing as any ).pricing ).toContain( 'Flagship' );
+    } );
+
+    it( 'uses Mistral AI for detail when no pricing available', () => {
+        const modelWithoutPricing = getChatModelInfo( {
+            ...base,
+            id: 'nonexistent-model',
+        } );
+        expect( modelWithoutPricing.detail ).toBe( 'Mistral AI' );
+        expect( ( modelWithoutPricing as any ).pricing ).toBeUndefined();
+    } );
 } );

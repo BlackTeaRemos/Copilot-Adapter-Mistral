@@ -58,7 +58,6 @@ export type RawModel = {
 
 export const DEFAULT_COMPLETION_TOKENS = 4096;
 export const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
-export const DEBUG_STREAM_LOGGING = process.env.MISTRAL_DEBUG_STREAM === '1';
 
 export const MODEL_OUTPUT_LIMITS: Record<string, number> = {
     'mistral-tiny-latest': 4096,

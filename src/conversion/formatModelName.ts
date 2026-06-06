@@ -18,7 +18,7 @@ export function getChatModelInfo ( model: MistralModel ): LanguageModelChatInfor
         id: model.id,
         name: model.name,
         family: 'mistral',
-        detail: p ? formatPricingDetail( p ) : 'Mistral AI',
+        detail: p ? p.tier : 'Mistral AI',
         pricing: p ? formatPricingDetail( p ) : undefined,
         priceCategory: p?.priceCategory,
         inputCost: p ? usdToAic( p.inputPer1M ) : undefined,
