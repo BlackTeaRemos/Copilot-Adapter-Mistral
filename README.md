@@ -1,11 +1,11 @@
-# Copilot Adapter - Mistral
+# Mistral Models for Copilot Chat
 
 <p align="center">
-  <img src=".github/asset/icon.png" alt="Copilot Adapter - Mistral" width="128" height="128">
+  <img src=".github/asset/icon.png" alt="Mistral Models for Copilot Chat" width="128" height="128">
 </p>
 
 <p align="center">
-  <strong>Copilot extension for seamless integration with Mistral AI models</strong>
+  <strong>Mistral Models extension for seamless integration with Copilot Chat</strong>
 </p>
 
 <p align="center">
@@ -17,6 +17,20 @@
 <p align="center">
   <small>Based on <a href="https://github.com/selfagency/mistral-models-vscode">selfagency/mistral-models-vscode</a>, which was based on <a href="https://github.com/OEvortex/vscode-mistral-copilot-chat">OEvortex/vscode-mistral-copilot-chat</a> (now discontinued). Substantially rewritten.</small>
 </p>
+
+## What is this?
+
+### Model Selection
+
+![Model Selection](.github/assets/target_1_model_selection.gif)
+
+### Tooling Integration
+
+![Tooling Integration](.github/assets/target_2_tooling_integration.gif)
+
+### Real-time Data Display
+
+![Real-time Data](.github/assets/target_3_realtime_data.gif)
 
 ## Why?
 
@@ -32,6 +46,7 @@ Open an issue for any feature you want which i will evaluate on a case by case b
 - **Model Picker** - Sensible UI for selecting Mistral models in Copilot Chat
 - **Tool Calling** - Full function call support for the model through the Copilot API
 - **Full Copilot Chat Compatibility** - Seamless integration with existing Copilot Chat conversations
+
 
 ## Requirements
 

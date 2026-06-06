@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Mistral Models for Copilot Chat",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "icon": ".github/asset/icon.png",
   "description": "Mistral Models integration for Copilot Chat",
   "categories": [
@@ -63,7 +63,7 @@
     ],
     "chatParticipants": [
       {
-        "id": "mistral-models-for-copilot-chat.mistral",
+        "id": "mistral-api-for-copilot-adapter.mistral",
         "name": "mistral",
         "fullName": "Mistral AI",
         "description": "Chat with a Mistral AI model",
