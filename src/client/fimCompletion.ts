@@ -19,7 +19,7 @@ export type FimParams = {
     promptCacheKey?: string;
 };
 
-export async function fimComplete (
+export async function fimComplete(
     client: Mistral,
     params: FimParams,
     signal: AbortSignal,
@@ -37,11 +37,13 @@ export async function fimComplete (
 
     const choice = response.choices?.[ 0 ];
     const content = choice?.message?.content;
-    const text = typeof content === 'string'
+    const text = typeof content === `string`
         ? content
         : Array.isArray( content )
-            ? content.map( c => ( c.type === 'text' ? c.text : '' ) ).join( '' )
-            : '';
+            ? content.map( c => {
+                return ( c.type === `text` ? c.text : `` );
+            } ).join( `` )
+            : ``;
 
     const usage: FimUsage = {
         promptTokens: response.usage?.promptTokens ?? 0,

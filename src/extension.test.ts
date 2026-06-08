@@ -13,7 +13,7 @@ import {
 } from 'vscode';
 import { activate, deactivate } from './extension.js';
 
-vi.mock( './provider', () => {
+vi.mock( `./provider`, () => {
     const mockDispose = vi.fn();
     const mockSetApiKey = vi.fn();
     const mockProvider = {
@@ -23,7 +23,7 @@ vi.mock( './provider', () => {
     };
 
     return {
-        MistralChatModelProvider: vi.fn().mockImplementation( function (
+        MistralChatModelProvider: vi.fn().mockImplementation( function(
             context: any,
             logOutputChannel: any,
             autoInit?: boolean,
@@ -40,42 +40,42 @@ vi.mock( './provider', () => {
     };
 } );
 
-describe( 'extension', () => {
+describe( `extension`, () => {
     const mockContext = {
         subscriptions: { push: vi.fn() },
-        extensionUri: '/fake-extension',
+        extensionUri: `/fake-extension`,
     } as any;
 
     beforeEach( () => {
         vi.clearAllMocks();
     } );
 
-    describe( 'activate', () => {
-        it( 'registers the language model chat provider', () => {
+    describe( `activate`, () => {
+        it( `registers the language model chat provider`, () => {
             activate( mockContext );
-            expect( lm.registerLanguageModelChatProvider ).toHaveBeenCalledWith( 'mistral', expect.any( Object ) );
+            expect( lm.registerLanguageModelChatProvider ).toHaveBeenCalledWith( `mistral`, expect.any( Object ) );
         } );
 
-        it( 'registers the manageApiKey command', () => {
+        it( `registers the manageApiKey command`, () => {
             activate( mockContext );
-            expect( commands.registerCommand ).toHaveBeenCalledWith( 'mistral-adapter.manageApiKey', expect.any( Function ) );
+            expect( commands.registerCommand ).toHaveBeenCalledWith( `mistral-adapter.manageApiKey`, expect.any( Function ) );
         } );
 
-        it( 'registers the embedding index and semantic search commands', () => {
+        it( `registers the embedding index and semantic search commands`, () => {
             activate( mockContext );
-            expect( commands.registerCommand ).toHaveBeenCalledWith( 'mistral-adapter.buildEmbeddingIndex', expect.any( Function ) );
-            expect( commands.registerCommand ).toHaveBeenCalledWith( 'mistral-adapter.semanticSearch', expect.any( Function ) );
+            expect( commands.registerCommand ).toHaveBeenCalledWith( `mistral-adapter.buildEmbeddingIndex`, expect.any( Function ) );
+            expect( commands.registerCommand ).toHaveBeenCalledWith( `mistral-adapter.semanticSearch`, expect.any( Function ) );
         } );
 
-        it( 'pushes provider + 2 commands + dispose handler bundled in first push call', () => {
+        it( `pushes provider + 2 commands + dispose handler bundled in first push call`, () => {
             activate( mockContext );
             // First push call is provider + manageApiKey + selectInlineCompletionModel + dispose handler
             expect( mockContext.subscriptions.push.mock.calls[ 0 ] ).toHaveLength( 4 );
         } );
 
-        it( 'creates output channel and status bar and tracks them in subscriptions', () => {
+        it( `creates output channel and status bar and tracks them in subscriptions`, () => {
             activate( mockContext );
-            expect( window.createOutputChannel ).toHaveBeenCalledWith( 'Mistral Models', { log: true } );
+            expect( window.createOutputChannel ).toHaveBeenCalledWith( `Mistral Models`, { log: true } );
             expect( window.createStatusBarItem ).toHaveBeenCalled();
             // push call index 10: output channel + status bar (after bundle, inline register, toggle statusbar,
             // toggle command, embeddings provider, embedding status, embedding index, search tool, embeddings
@@ -83,12 +83,12 @@ describe( 'extension', () => {
             expect( mockContext.subscriptions.push.mock.calls[ 10 ] ).toHaveLength( 2 );
         } );
 
-        it( 'creates the @mistral chat participant', () => {
+        it( `creates the @mistral chat participant`, () => {
             activate( mockContext );
-            expect( chat.createChatParticipant ).toHaveBeenCalledWith( 'mistral-api-for-copilot-adapter.mistral', expect.any( Function ) );
+            expect( chat.createChatParticipant ).toHaveBeenCalledWith( `mistral-api-for-copilot-adapter.mistral`, expect.any( Function ) );
         } );
 
-        it( 'pushes participant disposable into context.subscriptions', () => {
+        it( `pushes participant disposable into context.subscriptions`, () => {
             activate( mockContext );
             // 12 push calls: bundle, inline register, toggle statusbar, toggle command, embeddings provider,
             // embedding status, embedding index, search tool, embeddings commands, config watcher, output+status, participant
@@ -97,96 +97,96 @@ describe( 'extension', () => {
         } );
     } );
 
-    describe( 'activate — participant handler', () => {
-        async function getHandler () {
+    describe( `activate — participant handler`, () => {
+        async function getHandler() {
             activate( mockContext );
-            const [ , handler ] = ( chat.createChatParticipant as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
+            const [, handler] = ( chat.createChatParticipant as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
             return handler;
         }
 
-        it( 'sends history + prompt to request.model.sendRequest', async () => {
+        it( `sends history + prompt to request.model.sendRequest`, async() => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };
             const mockResponse = {
                 stream: ( async function* () {
-                    yield new LanguageModelTextPart( 'world' );
+                    yield new LanguageModelTextPart( `world` );
                 } )(),
             };
             const mockSendRequest = vi.fn().mockResolvedValue( mockResponse );
 
-            const mockRequest = { prompt: 'hello', model: { sendRequest: mockSendRequest } };
+            const mockRequest = { prompt: `hello`, model: { sendRequest: mockSendRequest } };
             const mockChatContext = { history: [] };
             const mockToken = { isCancellationRequested: false };
 
             await handler( mockRequest, mockChatContext, mockStream, mockToken );
 
             expect( mockSendRequest ).toHaveBeenCalledOnce();
-            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
+            const [messages] = mockSendRequest.mock.calls[ 0 ];
             // Last message is the current prompt
-            expect( messages.at( -1 ).content ).toBe( 'hello' );
+            expect( messages.at( -1 ).content ).toBe( `hello` );
         } );
 
-        it( 'streams text chunks back as markdown', async () => {
+        it( `streams text chunks back as markdown`, async() => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };
             const mockResponse = {
                 stream: ( async function* () {
-                    yield new LanguageModelTextPart( 'chunk1' );
-                    yield new LanguageModelTextPart( 'chunk2' );
+                    yield new LanguageModelTextPart( `chunk1` );
+                    yield new LanguageModelTextPart( `chunk2` );
                 } )(),
             };
             const mockSendRequest = vi.fn().mockResolvedValue( mockResponse );
 
-            await handler( { prompt: 'test', model: { sendRequest: mockSendRequest } }, { history: [] }, mockStream, {
+            await handler( { prompt: `test`, model: { sendRequest: mockSendRequest } }, { history: [] }, mockStream, {
                 isCancellationRequested: false,
             } );
 
-            expect( mockStream.markdown ).toHaveBeenCalledWith( 'chunk1' );
-            expect( mockStream.markdown ).toHaveBeenCalledWith( 'chunk2' );
+            expect( mockStream.markdown ).toHaveBeenCalledWith( `chunk1` );
+            expect( mockStream.markdown ).toHaveBeenCalledWith( `chunk2` );
         } );
 
-        it( 'includes prior ChatRequestTurn as a User message in history', async () => {
+        it( `includes prior ChatRequestTurn as a User message in history`, async() => {
             const handler = await getHandler();
 
             const mockResponse = { stream: ( async function* () { } )() };
             const mockSendRequest = vi.fn().mockResolvedValue( mockResponse );
 
-            const priorRequest = new ( ChatRequestTurn as any )( 'prior question' );
+            const priorRequest = new ( ChatRequestTurn as any )( `prior question` );
             await handler(
-                { prompt: 'follow-up', model: { sendRequest: mockSendRequest } },
-                { history: [ priorRequest ] },
+                { prompt: `follow-up`, model: { sendRequest: mockSendRequest } },
+                { history: [priorRequest] },
                 { markdown: vi.fn() },
                 { isCancellationRequested: false },
             );
 
-            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
-            expect( messages[ 0 ].content ).toBe( 'prior question' );
-            expect( messages[ 1 ].content ).toBe( 'follow-up' );
+            const [messages] = mockSendRequest.mock.calls[ 0 ];
+            expect( messages[ 0 ].content ).toBe( `prior question` );
+            expect( messages[ 1 ].content ).toBe( `follow-up` );
         } );
 
-        it( 'includes prior ChatResponseTurn as an Assistant message in history', async () => {
+        it( `includes prior ChatResponseTurn as an Assistant message in history`, async() => {
             const handler = await getHandler();
 
             const mockResponse = { stream: ( async function* () { } )() };
             const mockSendRequest = vi.fn().mockResolvedValue( mockResponse );
 
             const priorResponse = new ( ChatResponseTurn as any )( [
-                new ( ChatResponseMarkdownPart as any )( new ( MarkdownString as any )( 'prior answer' ) ),
+                new ( ChatResponseMarkdownPart as any )( new ( MarkdownString as any )( `prior answer` ) ),
             ] );
             await handler(
-                { prompt: 'next', model: { sendRequest: mockSendRequest } },
-                { history: [ priorResponse ] },
+                { prompt: `next`, model: { sendRequest: mockSendRequest } },
+                { history: [priorResponse] },
                 { markdown: vi.fn() },
                 { isCancellationRequested: false },
             );
 
-            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
-            expect( messages[ 0 ].content ).toBe( 'prior answer' );
+            const [messages] = mockSendRequest.mock.calls[ 0 ];
+            expect( messages[ 0 ].content ).toBe( `prior answer` );
         } );
 
-        it( 'includes prior ChatResponseTurn2 as an Assistant message in history', async () => {
+        it( `includes prior ChatResponseTurn2 as an Assistant message in history`, async() => {
             const handler = await getHandler();
 
             const mockResponse = { stream: ( async function* () { } )() };
@@ -194,57 +194,57 @@ describe( 'extension', () => {
 
             const ChatResponseTurn2Ctor = ( vscode as unknown as { ChatResponseTurn2?: new ( ...args: unknown[] ) => unknown; } )
                 .ChatResponseTurn2;
-            expect( ChatResponseTurn2Ctor ).toBeTypeOf( 'function' );
+            expect( ChatResponseTurn2Ctor ).toBeTypeOf( `function` );
 
             const priorResponseV2 = new ( ChatResponseTurn2Ctor as any )( [
-                new ( ChatResponseMarkdownPart as any )( new ( MarkdownString as any )( 'prior v2 answer' ) ),
+                new ( ChatResponseMarkdownPart as any )( new ( MarkdownString as any )( `prior v2 answer` ) ),
             ] );
             await handler(
-                { prompt: 'next', model: { sendRequest: mockSendRequest } },
-                { history: [ priorResponseV2 ] },
+                { prompt: `next`, model: { sendRequest: mockSendRequest } },
+                { history: [priorResponseV2] },
                 { markdown: vi.fn() },
                 { isCancellationRequested: false },
             );
 
-            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
-            expect( messages[ 0 ].content ).toBe( 'prior v2 answer' );
+            const [messages] = mockSendRequest.mock.calls[ 0 ];
+            expect( messages[ 0 ].content ).toBe( `prior v2 answer` );
         } );
 
-        it( 'surfaces errors as a markdown message', async () => {
+        it( `surfaces errors as a markdown message`, async() => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };
-            const mockSendRequest = vi.fn().mockRejectedValue( new Error( 'model unavailable' ) );
+            const mockSendRequest = vi.fn().mockRejectedValue( new Error( `model unavailable` ) );
 
-            await handler( { prompt: 'hi', model: { sendRequest: mockSendRequest } }, { history: [] }, mockStream, {
+            await handler( { prompt: `hi`, model: { sendRequest: mockSendRequest } }, { history: [] }, mockStream, {
                 isCancellationRequested: false,
             } );
 
-            expect( mockStream.markdown ).toHaveBeenCalledWith( expect.stringContaining( 'model unavailable' ) );
+            expect( mockStream.markdown ).toHaveBeenCalledWith( expect.stringContaining( `model unavailable` ) );
         } );
 
-        it( 'sanitizes error messages and hides sensitive details', async () => {
+        it( `sanitizes error messages and hides sensitive details`, async() => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };
             const mockSendRequest = vi.fn().mockRejectedValue( {
                 statusCode: 401,
-                message: 'secret token leak',
+                message: `secret token leak`,
             } );
 
-            await handler( { prompt: 'test', model: { sendRequest: mockSendRequest } }, { history: [] }, mockStream, {
+            await handler( { prompt: `test`, model: { sendRequest: mockSendRequest } }, { history: [] }, mockStream, {
                 isCancellationRequested: false,
             } );
 
             // Should show user-friendly message for 401, not the raw error
             const callArg = mockStream.markdown.mock.calls[ 0 ][ 0 ];
-            expect( callArg ).toContain( 'API key' );
-            expect( callArg ).not.toContain( 'secret token leak' );
+            expect( callArg ).toContain( `API key` );
+            expect( callArg ).not.toContain( `secret token leak` );
         } );
     } );
 
-    describe( 'deactivate', () => {
-        it( 'returns undefined', () => {
+    describe( `deactivate`, () => {
+        it( `returns undefined`, () => {
             expect( deactivate() ).toBeUndefined();
         } );
     } );

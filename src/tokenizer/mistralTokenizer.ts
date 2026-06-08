@@ -30,12 +30,14 @@ type TekkenMeta = { pat_str: string; version?: string; };
  *
  * @param extensionPath Absolute path to the installed extension root.
  */
-export function getMistralTokenizer ( extensionPath: string ): Tiktoken | null {
-    if ( cached !== undefined ) { return cached; }
+export function getMistralTokenizer( extensionPath: string ): Tiktoken | null {
+    if ( cached !== undefined ) {
+        return cached;
+    }
     try {
-        const dir = join( extensionPath, 'assets' );
-        const bpe_ranks = readFileSync( join( dir, 'tekken.bpe' ), 'utf8' );
-        const meta = JSON.parse( readFileSync( join( dir, 'tekken.meta.json' ), 'utf8' ) ) as TekkenMeta;
+        const dir = join( extensionPath, `assets` );
+        const bpe_ranks = readFileSync( join( dir, `tekken.bpe` ), `utf8` );
+        const meta = JSON.parse( readFileSync( join( dir, `tekken.meta.json` ), `utf8` ) ) as TekkenMeta;
         cached = new Tiktoken( { pat_str: meta.pat_str, special_tokens: {}, bpe_ranks } );
     } catch {
         cached = null;
@@ -44,6 +46,6 @@ export function getMistralTokenizer ( extensionPath: string ): Tiktoken | null {
 }
 
 /** Test-only: drop the cached instance so a later load re-reads the assets. */
-export function resetMistralTokenizer (): void {
+export function resetMistralTokenizer(): void {
     cached = undefined;
 }

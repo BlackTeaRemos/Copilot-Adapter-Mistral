@@ -9,42 +9,54 @@ const DEFAULT_MAX_TOKENS = 256;
 export class MistralInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
     private session = { input: 0, output: 0, total: 0, calls: 0 };
 
-    constructor (
+    constructor(
         private readonly provider: MistralChatModelProvider,
         private readonly log: vscode.LogOutputChannel,
     ) { }
 
-    private getModelId (): string {
-        return vscode.workspace.getConfiguration( 'mistral' ).get( 'inlineCompletionModel' ) ?? '';
+    private getModelId(): string {
+        return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionModel` ) ?? ``;
     }
 
-    private isEnabled (): boolean {
-        return vscode.workspace.getConfiguration( 'mistral' ).get( 'inlineCompletionEnabled' ) ?? false;
+    private isEnabled(): boolean {
+        return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionEnabled` ) ?? false;
     }
 
-    async provideInlineCompletionItems (
+    async provideInlineCompletionItems(
         document: vscode.TextDocument,
         position: vscode.Position,
         _context: vscode.InlineCompletionContext,
         token: vscode.CancellationToken,
     ): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | undefined> {
-        if ( !this.isEnabled() ) { return undefined; }
+        if ( !this.isEnabled() ) {
+            return undefined;
+        }
         const modelId = this.getModelId();
-        if ( modelId === '' ) { return undefined; }
+        if ( modelId === `` ) {
+            return undefined;
+        }
 
         const client = await this.provider.ensureClient( true );
-        if ( !client ) { return undefined; }
-        if ( token.isCancellationRequested ) { return undefined; }
+        if ( !client ) {
+            return undefined;
+        }
+        if ( token.isCancellationRequested ) {
+            return undefined;
+        }
 
         const offset = document.offsetAt( position );
         const fullText = document.getText();
         const prefix = fullText.slice( Math.max( 0, offset - MAX_PREFIX_CHARS ), offset );
         const suffix = fullText.slice( offset, offset + MAX_SUFFIX_CHARS );
 
-        if ( prefix.trim() === '' ) { return undefined; }
+        if ( prefix.trim() === `` ) {
+            return undefined;
+        }
 
         const abortController = new AbortController();
-        const sub = token.onCancellationRequested( () => abortController.abort() );
+        const sub = token.onCancellationRequested( () => {
+            return abortController.abort();
+        } );
 
         const started = Date.now();
         try {
@@ -61,7 +73,9 @@ export class MistralInlineCompletionProvider implements vscode.InlineCompletionI
                 this.log,
             );
 
-            if ( token.isCancellationRequested || !result || result.text === '' ) { return undefined; }
+            if ( token.isCancellationRequested || !result || result.text === `` ) {
+                return undefined;
+            }
 
             this.session.input += result.usage.promptTokens;
             this.session.output += result.usage.completionTokens;
@@ -78,9 +92,11 @@ export class MistralInlineCompletionProvider implements vscode.InlineCompletionI
                 result.text,
                 new vscode.Range( position, position ),
             );
-            return [ item ];
-        } catch ( error ) {
-            if ( abortController.signal.aborted || token.isCancellationRequested ) { return undefined; }
+            return [item];
+        } catch( error ) {
+            if ( abortController.signal.aborted || token.isCancellationRequested ) {
+                return undefined;
+            }
             this.log.error( `[Mistral FIM] error: ${ error instanceof Error ? error.message : String( error ) }` );
             return undefined;
         } finally {

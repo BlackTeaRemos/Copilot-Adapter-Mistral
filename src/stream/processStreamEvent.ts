@@ -20,7 +20,7 @@ export type StreamLogger = {
     warn: ( msg: string ) => void;
 };
 
-export function processStreamEvent (
+export function processStreamEvent(
     event: CompletionEvent,
     ctx: StreamContext,
     progress: Progress<LanguageModelResponsePart>,
@@ -46,28 +46,30 @@ export function processStreamEvent (
         // Streaming chunk.usage is the plain UsageInfo type, which carries cache fields only via its
         // catchall (raw snake_case). Mistral has used several shapes across versions — try each.
         const rawUsage = chunk.usage as Record<string, unknown>;
-        const detail = ( rawUsage[ 'prompt_tokens_details' ] ?? rawUsage[ 'prompt_token_details' ] ) as
+        const detail = ( rawUsage[ `prompt_tokens_details` ] ?? rawUsage[ `prompt_token_details` ] ) as
             { cached_tokens?: number; } | undefined;
-        const cached = detail?.cached_tokens ?? ( rawUsage[ 'num_cached_tokens' ] as number | undefined ) ?? 0;
-        if ( cached > 0 ) { ctx.usage.cached = Math.max( ctx.usage.cached, cached ); }
+        const cached = detail?.cached_tokens ?? ( rawUsage[ `num_cached_tokens` ] as number | undefined ) ?? 0;
+        if ( cached > 0 ) {
+            ctx.usage.cached = Math.max( ctx.usage.cached, cached );
+        }
         log.trace(
             `[Mistral] token usage — prompt: ${ prompt }, completion: ${ completion }, cached: ${ cached }` +
-            ( total !== undefined ? `, total: ${ total }` : '' ),
+            ( total !== undefined ? `, total: ${ total }` : `` ),
         );
     }
 
     const choice = chunk?.choices?.[ 0 ];
     if ( !choice ) {
-        log.trace( '[Mistral] stream chunk has no choices, skipping' );
+        log.trace( `[Mistral] stream chunk has no choices, skipping` );
         return;
     }
 
     const finishReason = choice.finishReason;
     if ( finishReason ) {
         log.trace( `[Mistral] stream chunk finishReason=${ finishReason }` );
-        if ( finishReason === 'length' ) {
+        if ( finishReason === `length` ) {
             ctx.truncated = true;
-            log.warn( '[Mistral] response truncated — hit maxTokens limit' );
+            log.warn( `[Mistral] response truncated — hit maxTokens limit` );
         }
     }
 
@@ -75,9 +77,11 @@ export function processStreamEvent (
 
     if ( delta?.content ) {
         const content =
-            typeof delta.content === 'string'
+            typeof delta.content === `string`
                 ? delta.content
-                : delta.content.map( c => ( 'text' in c ? c.text ?? '' : '' ) ).join( '' );
+                : delta.content.map( c => {
+                    return ( `text` in c ? c.text ?? `` : `` );
+                } ).join( `` );
         if ( content ) {
             log.trace( `[Mistral] content delta len=${ content.length }` );
             processContentDelta( content, ctx.contentState, progress, log );
@@ -89,7 +93,7 @@ export function processStreamEvent (
         processToolCallDelta( delta.toolCalls, ctx.toolCallState, ctx.map, progress, log );
     }
 
-    if ( finishReason === 'stop' || finishReason === 'tool_calls' ) {
+    if ( finishReason === `stop` || finishReason === `tool_calls` ) {
         flushToolCallState( ctx.toolCallState, progress, log );
     }
 }

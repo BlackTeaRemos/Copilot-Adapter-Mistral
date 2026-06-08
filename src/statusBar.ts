@@ -2,7 +2,7 @@ import { StatusBarItem } from 'vscode';
 import type { UsageStats } from './types.js';
 import type { TokenizerCalibration } from './cacheCalibration.js';
 
-export function updateStatusBar (
+export function updateStatusBar(
     statusBarItem: StatusBarItem,
     usage: UsageStats,
     modelName: string,
@@ -15,21 +15,23 @@ export function updateStatusBar (
         return;
     }
 
-    const fmt = ( n: number ) => n >= 1000 ? `${ ( n / 1000 ).toFixed( 1 ) }k` : String( n );
-    const modelTag = modelName ? ` ${ modelName }` : '';
+    const fmt = ( n: number ) => {
+        return n >= 1000 ? `${ ( n / 1000 ).toFixed( 1 ) }k` : String( n );
+    };
+    const modelTag = modelName ? ` ${ modelName }` : ``;
     const conf = calibration.confidenceLevel( modelId );
     const samples = calibration.sampleCount( modelId );
     const scale = calibration.scale( modelId );
-    const scaleStr = samples > 0 ? ( scale !== undefined ? scale.toFixed( 3 ) : 'cal…' ) : '';
-    const cacheTag = cached > 0 ? ` ${ fmt( cached ) } cached` : '';
-    const scaleTag = scaleStr ? ` [${ scaleStr }]` : '';
+    const scaleStr = samples > 0 ? ( scale !== undefined ? scale.toFixed( 3 ) : `cal…` ) : ``;
+    const cacheTag = cached > 0 ? ` ${ fmt( cached ) } cached` : ``;
+    const scaleTag = scaleStr ? ` [${ scaleStr }]` : ``;
 
     statusBarItem.text = `$(hubot)${ modelTag } ${ fmt( input ) }↑ ${ fmt( output ) }↓${ cacheTag }${ scaleTag }`;
 
-    const cachedLine = cached > 0 ? `  cached:          ${ cached.toLocaleString() }\n` : '';
+    const cachedLine = cached > 0 ? `  cached:          ${ cached.toLocaleString() }\n` : ``;
     const tokLine = samples > 0
-        ? `tokenizer scale:  ${ scale !== undefined ? scale.toFixed( 3 ) : 'calibrating' } (${ ( conf * 100 ).toFixed( 0 ) }% conf, ${ samples } samples)\n`
-        : '';
+        ? `tokenizer scale:  ${ scale !== undefined ? scale.toFixed( 3 ) : `calibrating` } (${ ( conf * 100 ).toFixed( 0 ) }% conf, ${ samples } samples)\n`
+        : ``;
     statusBarItem.tooltip =
         `Mistral - last turn (${ modelName })\n` +
         `prompt (in):      ${ input.toLocaleString() }\n` +

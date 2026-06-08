@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { CapabilityModelStore, familyPrefix, pickCanonical } from './modelStore.js';
 import type { MistralModel } from '../types.js';
 
-function model ( id: string, over: Partial<MistralModel> = {} ): MistralModel {
+function model( id: string, over: Partial<MistralModel> = {} ): MistralModel {
     return {
         id,
         name: id,
@@ -18,39 +18,39 @@ function model ( id: string, over: Partial<MistralModel> = {} ): MistralModel {
     };
 }
 
-describe( 'familyPrefix', () => {
-    it( 'strips a trailing -latest segment', () => {
-        expect( familyPrefix( 'mistral-large-latest' ) ).toBe( 'mistral-large' );
+describe( `familyPrefix`, () => {
+    it( `strips a trailing -latest segment`, () => {
+        expect( familyPrefix( `mistral-large-latest` ) ).toBe( `mistral-large` );
     } );
 
-    it( 'strips a trailing 4-digit date stamp', () => {
-        expect( familyPrefix( 'mistral-large-2512' ) ).toBe( 'mistral-large' );
+    it( `strips a trailing 4-digit date stamp`, () => {
+        expect( familyPrefix( `mistral-large-2512` ) ).toBe( `mistral-large` );
     } );
 
-    it( 'leaves ids without a latest/date suffix untouched', () => {
-        expect( familyPrefix( 'codestral' ) ).toBe( 'codestral' );
+    it( `leaves ids without a latest/date suffix untouched`, () => {
+        expect( familyPrefix( `codestral` ) ).toBe( `codestral` );
     } );
 
-    it( 'only strips the final segment, not embedded digits', () => {
-        expect( familyPrefix( 'mistral-medium-3' ) ).toBe( 'mistral-medium-3' );
-    } );
-} );
-
-describe( 'pickCanonical', () => {
-    it( 'prefers a latest variant over versioned ids', () => {
-        expect( pickCanonical( [ 'mistral-large-2512', 'mistral-large-latest' ] ) ).toBe( 'mistral-large-latest' );
-    } );
-
-    it( 'picks the highest numeric version when no latest exists', () => {
-        expect( pickCanonical( [ 'm-3', 'm-3-5', 'm-3.5', 'm-c21211-r0-75' ] ) ).toBe( 'm-c21211-r0-75' );
-    } );
-
-    it( 'returns the sole id for a singleton list', () => {
-        expect( pickCanonical( [ 'only-one' ] ) ).toBe( 'only-one' );
+    it( `only strips the final segment, not embedded digits`, () => {
+        expect( familyPrefix( `mistral-medium-3` ) ).toBe( `mistral-medium-3` );
     } );
 } );
 
-describe( 'CapabilityModelStore', () => {
+describe( `pickCanonical`, () => {
+    it( `prefers a latest variant over versioned ids`, () => {
+        expect( pickCanonical( [`mistral-large-2512`, `mistral-large-latest`] ) ).toBe( `mistral-large-latest` );
+    } );
+
+    it( `picks the highest numeric version when no latest exists`, () => {
+        expect( pickCanonical( [`m-3`, `m-3-5`, `m-3.5`, `m-c21211-r0-75`] ) ).toBe( `m-c21211-r0-75` );
+    } );
+
+    it( `returns the sole id for a singleton list`, () => {
+        expect( pickCanonical( [`only-one`] ) ).toBe( `only-one` );
+    } );
+} );
+
+describe( `CapabilityModelStore`, () => {
     let store: CapabilityModelStore;
 
     beforeEach( () => {
@@ -58,40 +58,50 @@ describe( 'CapabilityModelStore', () => {
         store.clear();
     } );
 
-    it( 'getInstance returns a singleton', () => {
+    it( `getInstance returns a singleton`, () => {
         expect( CapabilityModelStore.getInstance() ).toBe( store );
     } );
 
-    it( 'keeps only the canonical model per family', () => {
-        store.insertModel( model( 'mistral-large-2512' ) );
-        store.insertModel( model( 'mistral-large-latest' ) );
+    it( `keeps only the canonical model per family`, () => {
+        store.insertModel( model( `mistral-large-2512` ) );
+        store.insertModel( model( `mistral-large-latest` ) );
         const all = store.getAllModels();
         expect( all ).toHaveLength( 1 );
-        expect( all[ 0 ].id ).toBe( 'mistral-large-latest' );
+        expect( all[ 0 ].id ).toBe( `mistral-large-latest` );
     } );
 
-    it( 'ignores insertion order when picking the canonical', () => {
-        store.insertModel( model( 'mistral-large-latest' ) );
-        store.insertModel( model( 'mistral-large-2512' ) );
-        expect( store.getAllModels().map( m => m.id ) ).toEqual( [ 'mistral-large-latest' ] );
+    it( `ignores insertion order when picking the canonical`, () => {
+        store.insertModel( model( `mistral-large-latest` ) );
+        store.insertModel( model( `mistral-large-2512` ) );
+        expect( store.getAllModels().map( m => {
+            return m.id;
+        } ) ).toEqual( [`mistral-large-latest`] );
     } );
 
-    it( 'indexes models by capability', () => {
-        store.insertModel( model( 'a-latest', { toolCalling: true, supportsVision: true } ) );
-        store.insertModel( model( 'b-latest', { supportsCompletionFim: true } ) );
-        expect( store.getModelsWithToolCalling().map( m => m.id ) ).toEqual( [ 'a-latest' ] );
-        expect( store.getModelsWithVision().map( m => m.id ) ).toEqual( [ 'a-latest' ] );
-        expect( store.getModelsWithCompletionFim().map( m => m.id ) ).toEqual( [ 'b-latest' ] );
+    it( `indexes models by capability`, () => {
+        store.insertModel( model( `a-latest`, { toolCalling: true, supportsVision: true } ) );
+        store.insertModel( model( `b-latest`, { supportsCompletionFim: true } ) );
+        expect( store.getModelsWithToolCalling().map( m => {
+            return m.id;
+        } ) ).toEqual( [`a-latest`] );
+        expect( store.getModelsWithVision().map( m => {
+            return m.id;
+        } ) ).toEqual( [`a-latest`] );
+        expect( store.getModelsWithCompletionFim().map( m => {
+            return m.id;
+        } ) ).toEqual( [`b-latest`] );
     } );
 
-    it( 'getChatModels returns models flagged completionChat', () => {
-        store.insertModel( model( 'chat-latest', { completionChat: true } ) );
-        store.insertModel( model( 'embed-latest', { completionChat: false } ) );
-        expect( store.getChatModels().map( m => m.id ) ).toEqual( [ 'chat-latest' ] );
+    it( `getChatModels returns models flagged completionChat`, () => {
+        store.insertModel( model( `chat-latest`, { completionChat: true } ) );
+        store.insertModel( model( `embed-latest`, { completionChat: false } ) );
+        expect( store.getChatModels().map( m => {
+            return m.id;
+        } ) ).toEqual( [`chat-latest`] );
     } );
 
-    it( 'clear empties every index', () => {
-        store.insertModel( model( 'a-latest', { toolCalling: true } ) );
+    it( `clear empties every index`, () => {
+        store.insertModel( model( `a-latest`, { toolCalling: true } ) );
         store.clear();
         expect( store.getAllModels() ).toEqual( [] );
         expect( store.getModelsWithToolCalling() ).toEqual( [] );

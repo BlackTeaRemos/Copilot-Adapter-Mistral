@@ -9,16 +9,25 @@ import type { MistralMessage } from './types.js';
  * same key while distinct conversations get distinct keys. Mistral does the
  * actual prefix matching; a stable key only raises the cache-hit probability.
  */
-export function computePromptCacheKey ( modelId: string, messages: readonly MistralMessage[] ): string {
-    const contentToText = ( c: MistralMessage[ 'content' ] ): string =>
-        typeof c === 'string' ? c
-            : Array.isArray( c ) ? c.map( p => ( p.type === 'text' ? p.text : '[img]' ) ).join( '' )
-                : '';
-    const parts: string[] = [ modelId ];
+export function computePromptCacheKey( modelId: string, messages: readonly MistralMessage[] ): string {
+    const contentToText = ( c: MistralMessage[ `content` ] ): string => {
+        return typeof c === `string` ? c
+            : Array.isArray( c ) ? c.map( p => {
+                return ( p.type === `text` ? p.text : `[img]` );
+            } ).join( `` )
+                : ``;
+    };
+    const parts: string[] = [modelId];
     for ( const m of messages ) {
-        if ( m.role === 'system' ) { parts.push( 'S:' + contentToText( m.content ) ); }
+        if ( m.role === `system` ) {
+            parts.push( `S:` + contentToText( m.content ) );
+        }
     }
-    const firstUser = messages.find( m => m.role === 'user' );
-    if ( firstUser ) { parts.push( 'U:' + contentToText( firstUser.content ) ); }
-    return 'vscode-' + createHash( 'sha256' ).update( parts.join( ' ' ) ).digest( 'hex' ).slice( 0, 32 );
+    const firstUser = messages.find( m => {
+        return m.role === `user`;
+    } );
+    if ( firstUser ) {
+        parts.push( `U:` + contentToText( firstUser.content ) );
+    }
+    return `vscode-` + createHash( `sha256` ).update( parts.join( ` ` ) ).digest( `hex` ).slice( 0, 32 );
 }

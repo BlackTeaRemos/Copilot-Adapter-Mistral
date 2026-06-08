@@ -17,7 +17,7 @@
     "coding",
     "code assistant",
     "adapter",
-    "inegration",
+    "integration",
     "language model",
     "llm"
   ],
@@ -38,6 +38,8 @@
     "build": "tsdown && node -e \"require('fs').renameSync('dist/extension.cjs', 'dist/extension.js'); require('fs').renameSync('dist/extension.cjs.map', 'dist/extension.js.map')\"",
     "build:prod": "NODE_ENV=production tsdown && node -e \"const fs=require('fs'); fs.renameSync('dist/extension.cjs', 'dist/extension.js'); if(fs.existsSync('dist/extension.cjs.map')) fs.renameSync('dist/extension.cjs.map', 'dist/extension.js.map');\"",
     "check": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "test": "vitest run src",
     "watch": "tsdown --watch",
     "bump:patch": "node scripts/bump.mjs patch",
@@ -207,9 +209,14 @@
     "js-tiktoken": "^1.0.21"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^25.6.0",
     "@types/vscode": "^1.109.0",
+    "@typescript-eslint/eslint-plugin": "^8.60.1",
+    "@typescript-eslint/parser": "^8.60.1",
     "@vscode/vsce": "^3.6.0",
+    "eslint-plugin-import": "^2.32.0",
     "tsdown": "^0.22.2",
     "typescript": "^5.8.3",
     "vitest": "^4.1.4"
