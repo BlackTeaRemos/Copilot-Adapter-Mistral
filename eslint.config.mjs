@@ -11,6 +11,30 @@ import * as reactPlugin from 'eslint-plugin-react';
  * ESLint config separated by responsibility.
  */
 export default [
+    // Global ignore patterns (exclude node_modules, temp files, and unrelated directories)
+    {
+        ignores: [
+            `node_modules/`,
+            `.vscode/`,
+            `**/temp/`,
+            `**/*.d.ts`,
+            `**/.*`,
+            `**/dist/`,
+            `**/out/`,
+            `**/build/`,
+            `**/coverage/`,
+            `**/__mocks__/`,
+            `**/__tests__/`,
+            `**/*.config.js`,
+            `**/*.config.mjs`,
+            `**/*.config.ts`,
+            `**/scripts/`,
+            `**/private/`,
+            `**/AppData/**`,
+            `**/Temp/**`,
+        ],
+    },
+
     // Core JS rules (merge recommended rules)
     {
         files: [`src/**/*.js`, `src/**/*.mjs`],

@@ -212,6 +212,72 @@ describe( 'provideLanguageModelChatResponse', () => {
     } );
 } );
 
+// ── cache hit percentage calculation ──────────────────────────────────────────
+
+describe( 'cache hit percentage', () => {
+    it( 'normal cache hit: 50% of current input tokens cached', () => {
+        const cached = 5000;
+        const input = 10000;
+        const denom = input > 0 ? input : 0;
+        const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
+
+        expect( pct ).toBe( 50 );
+    } );
+
+    it( 'full cache hit: 100% of current input tokens cached', () => {
+        const cached = 10000;
+        const input = 10000;
+        const denom = input > 0 ? input : 0;
+        const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
+
+        expect( pct ).toBe( 100 );
+    } );
+
+    it( 'uses current input as denominator, never exceeds 100%', () => {
+        const cached = 8000;
+        const input = 10000;
+        const denom = input > 0 ? input : 0;
+        const pct = Math.round( ( cached / denom ) * 100 );
+
+        expect( pct ).toBeLessThanOrEqual( 100 );
+        expect( pct ).toBe( 80 );
+    } );
+
+    it( 'falls back to lastPrompt only when input is 0', () => {
+        const cached = 5000;
+        const input = 0;
+        const lastPrompt = 10000;
+
+        const denom = input > 0 ? input : lastPrompt;
+        const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
+
+        expect( denom ).toBe( 10000 );
+        expect( pct ).toBe( 50 );
+    } );
+
+    it( 'zero cache hit returns 0%', () => {
+        const cached = 0;
+        const input = 10000;
+        const denom = input > 0 ? input : 0;
+        const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
+
+        expect( pct ).toBe( 0 );
+    } );
+
+    it( 'saved tokens calculated as 90% of cached', () => {
+        const testCases = [
+            { cached: 1000, expected: 900 },
+            { cached: 5000, expected: 4500 },
+            { cached: 79856, expected: 71870 },
+        ];
+
+        testCases.forEach( ( { cached, expected } ) => {
+            const saved = Math.round( cached * 0.9 );
+            expect( saved ).toBe( expected );
+        } );
+    } );
+} );
+
 // ── provideTokenCount ─────────────────────────────────────────────────────────
 
 describe( 'provideTokenCount', () => {

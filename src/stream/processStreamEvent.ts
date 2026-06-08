@@ -28,8 +28,6 @@ export function processStreamEvent (
 ): void {
     const chunk = event.data;
 
-    log.trace( '[Mistral] stream chunk keys: ' + JSON.stringify( Object.keys( chunk || {} ) ) );
-
     if ( chunk?.model && chunk.model !== ctx.servedModel ) {
         ctx.servedModel = chunk.model;
         log.info( `[Mistral] served by model: ${ chunk.model }` );

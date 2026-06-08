@@ -13,6 +13,7 @@ export interface MistralModel {
     supportsParallelToolCalls: boolean;
     supportsVision?: boolean;
     supportsCompletionFim: boolean;
+    completionChat: boolean;
     temperature?: number;
     top_p?: number;
 }

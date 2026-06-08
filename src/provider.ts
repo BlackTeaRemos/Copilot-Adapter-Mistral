@@ -163,11 +163,12 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         }
 
         const models = await this.fetchModels();
-        const foundModel = models.find( m => m.id === model.id ) ?? {
+        const foundModel: MistralModel = models.find( m => m.id === model.id ) ?? {
             id: model.id, name: model.name,
             maxInputTokens: model.maxInputTokens, maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
             defaultCompletionTokens: DEFAULT_COMPLETION_TOKENS,
-            toolCalling: true, supportsParallelToolCalls: false, supportsVision: false, supportsCompletionFim: false,
+            toolCalling: true, supportsParallelToolCalls: false, supportsVision: false,
+            supportsCompletionFim: false, completionChat: true,
         };
 
         const mistralMessages = toMistralMessages( messages, this.toolCallIdMap );
@@ -222,19 +223,19 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             for await ( const event of stream as AsyncIterable<CompletionEvent> ) {
                 if ( token.isCancellationRequested ) { break; }
                 processStreamEvent( event, ctx, progress, this.log );
-                if ( this.statusBarItem ) {
-                    updateStatusBar( this.statusBarItem, this.tokensUsedThisSession, this.lastModelName, this.lastModelId, this.calibration );
-                }
             }
 
             if ( !token.isCancellationRequested ) {
                 flushContentDeltaState( ctx.contentState, this.log );
-                const { input, output, cached, lastPrompt } = this.tokensUsedThisSession;
+                const { input, cached, lastPrompt } = this.tokensUsedThisSession;
                 this.reportTokenUsage( progress, this.tokensUsedThisSession );
                 this.recordCalibration( model.id, lastPrompt, messages );
                 this.logCacheHit( cached, lastPrompt, input, model.id );
                 if ( ctx.truncated ) { this.reportTruncationWarning( progress, foundModel ); }
                 this.logModelRedirect( ctx, model.id );
+            }
+            if ( this.statusBarItem ) {
+                updateStatusBar( this.statusBarItem, this.tokensUsedThisSession, this.lastModelName, this.lastModelId, this.calibration );
             }
             this.log.debug(
                 `[Mistral] stream complete — model=${ ctx.servedModel ?? model.id } input=${ this.tokensUsedThisSession.input } output=${ this.tokensUsedThisSession.output } cached=${ this.tokensUsedThisSession.cached }` +
@@ -285,7 +286,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
     private logCacheHit ( cached: number, lastPrompt: number, input: number, modelId: string ): void {
         if ( cached > 0 ) {
-            const denom = lastPrompt > 0 ? lastPrompt : input;
+            const denom = input > 0 ? input : lastPrompt;
             const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
             const saved = Math.round( cached * 0.9 );
             this.log.info(
