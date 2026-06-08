@@ -12,7 +12,7 @@ export { pickCanonical };
 type KnownModelCard = BaseModelCard | FTModelCard;
 
 
-async function _fetchModels (
+async function _fetchModels(
     client: Mistral,
     log: MistralClientLogger,
 ): Promise<MistralModel[]> {
@@ -20,7 +20,7 @@ async function _fetchModels (
 
     const byId = new Map<string, KnownModelCard>();
     for ( const model of response.data ?? [] ) {
-        if ( model.type !== 'base' && model.type !== 'fine-tuned' ) {
+        if ( model.type !== `base` && model.type !== `fine-tuned` ) {
             continue;
         }
         if ( !byId.has( model.id ) ) {
@@ -34,7 +34,7 @@ async function _fetchModels (
 
     // Store all models in the CapabilityModelStore, including non-chat models.
     // Deduplication by family prefix is handled internally by CapabilityModelStore.insertModel.
-    for ( const [ , modelCard ] of byId ) {
+    for ( const [, modelCard] of byId ) {
         const originalName = modelCard.name ? formatModelName( modelCard.name ) : formatModelName( modelCard.id );
         const model: MistralModel = {
             id: modelCard.id,
@@ -55,30 +55,41 @@ async function _fetchModels (
 
     // Keep chat-compatible models, then collapse any sharing a display name to
     // the single canonical (latest/highest-version) entry.
-    const chatModels = store.getAllModels().filter( model => model.completionChat );
+    const chatModels = store.getAllModels().filter( model => {
+        return model.completionChat;
+    } );
 
     const byName = new Map<string, MistralModel[]>();
     for ( const model of chatModels ) {
         const group = byName.get( model.name );
-        if ( group ) { group.push( model ); }
-        else { byName.set( model.name, [ model ] ); }
+        if ( group ) {
+            group.push( model );
+        } else {
+            byName.set( model.name, [model] );
+        }
     }
 
     const result: MistralModel[] = [];
     for ( const group of byName.values() ) {
-        if ( group.length === 1 ) { result.push( group[ 0 ] ); continue; }
-        const canonicalId = pickCanonical( group.map( m => m.id ) );
-        result.push( group.find( m => m.id === canonicalId ) ?? group[ 0 ] );
+        if ( group.length === 1 ) {
+            result.push( group[ 0 ] ); continue;
+        }
+        const canonicalId = pickCanonical( group.map( m => {
+            return m.id;
+        } ) );
+        result.push( group.find( m => {
+            return m.id === canonicalId;
+        } ) ?? group[ 0 ] );
     }
 
     return result;
 }
 
-export async function fetchModels ( client: Mistral, log: MistralClientLogger ): Promise<MistralModel[]> {
+export async function fetchModels( client: Mistral, log: MistralClientLogger ): Promise<MistralModel[]> {
     try {
         return await _fetchModels( client, log );
-    } catch ( error ) {
-        log.error( '[Mistral] Failed to fetch models: ' + String( error ) );
+    } catch( error ) {
+        log.error( `[Mistral] Failed to fetch models: ` + String( error ) );
         return [];
     }
 };

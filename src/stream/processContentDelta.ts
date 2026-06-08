@@ -5,25 +5,25 @@ export type ContentDeltaState = {
     thinkBuffer: string;
 };
 
-export function createContentDeltaState (): ContentDeltaState {
-    return { thinkDepth: 0, thinkBuffer: '' };
+export function createContentDeltaState(): ContentDeltaState {
+    return { thinkDepth: 0, thinkBuffer: `` };
 }
 
-const THINK_OPEN = '<think>';
-const THINK_CLOSE = '</think>';
+const THINK_OPEN = `<think>`;
+const THINK_CLOSE = `</think>`;
 
-function reportText (
+function reportText(
     text: string,
     progress: Progress<LanguageModelResponsePart>,
     log: { debug: ( msg: string ) => void; },
 ): void {
     if ( text ) {
-        log.debug( '[Mistral] content delta: ' + text.slice( 0, 200 ) );
+        log.debug( `[Mistral] content delta: ` + text.slice( 0, 200 ) );
         progress.report( new LanguageModelTextPart( text ) );
     }
 }
 
-export function processContentDelta (
+export function processContentDelta(
     raw: string,
     state: ContentDeltaState,
     progress: Progress<LanguageModelResponsePart>,
@@ -47,7 +47,7 @@ export function processContentDelta (
         if ( state.thinkDepth > 0 ) {
             state.thinkBuffer += raw.slice( i, tagIdx );
             log.debug( `[Mistral] think block closed — buffered ${ state.thinkBuffer.length } chars, depth ${ state.thinkDepth } → ${ state.thinkDepth - 1 }` );
-            state.thinkBuffer = '';
+            state.thinkBuffer = ``;
             state.thinkDepth--;
             i = tagIdx + THINK_CLOSE.length;
         } else {
@@ -59,12 +59,12 @@ export function processContentDelta (
     }
 }
 
-export function flushContentDeltaState (
+export function flushContentDeltaState(
     state: ContentDeltaState,
     log: { debug: ( msg: string ) => void; },
 ): void {
     if ( state.thinkBuffer.length > 0 ) {
-        log.debug( '[Mistral] thinking delta length (flush): ' + state.thinkBuffer.length );
-        state.thinkBuffer = '';
+        log.debug( `[Mistral] thinking delta length (flush): ` + state.thinkBuffer.length );
+        state.thinkBuffer = ``;
     }
 }

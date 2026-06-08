@@ -5,7 +5,6 @@ import tsparser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
 import stylistic from '@stylistic/eslint-plugin';
 import * as tseslint from '@typescript-eslint/eslint-plugin';
-import * as reactPlugin from 'eslint-plugin-react';
 
 /**
  * ESLint config separated by responsibility.
@@ -115,15 +114,6 @@ export default [
             '@stylistic/keyword-spacing': `error`,
             '@stylistic/arrow-spacing': `error`,
             '@stylistic/block-spacing': `error`,
-        },
-    },
-
-    // React JSX rules (merge recommended react config)
-    {
-        rules: {
-            ...(reactPlugin.configs?.recommended?.rules ?? {}),
-            'react/jsx-uses-react': `off`,
-            'react/react-in-jsx-scope': `off`,
         },
     },
 

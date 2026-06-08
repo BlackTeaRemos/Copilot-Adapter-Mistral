@@ -19,11 +19,11 @@ export interface MistralModel {
 }
 
 
-export type MistralContent = string | Array<{ type: 'text'; text: string; } | { type: 'image_url'; imageUrl: string; }>;
+export type MistralContent = string | Array<{ type: `text`; text: string; } | { type: `image_url`; imageUrl: string; }>;
 
 export type MistralToolCall = {
     id: string;
-    type: 'function';
+    type: `function`;
     function: {
         name: string;
         arguments: string;
@@ -31,10 +31,10 @@ export type MistralToolCall = {
 };
 
 export type MistralMessage =
-    | { role: 'system'; content: string; }
-    | { role: 'user'; content: MistralContent; }
-    | { role: 'assistant'; content: MistralContent | null; toolCalls?: MistralToolCall[]; }
-    | { role: 'tool'; content: string | null; toolCallId: string; name?: string; };
+    | { role: `system`; content: string; }
+    | { role: `user`; content: MistralContent; }
+    | { role: `assistant`; content: MistralContent | null; toolCalls?: MistralToolCall[]; }
+    | { role: `tool`; content: string | null; toolCallId: string; name?: string; };
 
 export type ToolCallBuffer = { name?: string; argsText: string; };
 

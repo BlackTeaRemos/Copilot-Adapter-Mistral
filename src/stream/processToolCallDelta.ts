@@ -8,11 +8,11 @@ export type ToolCallState = {
     emitted: Set<string>;
 };
 
-export function createToolCallState (): ToolCallState {
+export function createToolCallState(): ToolCallState {
     return { buffers: new Map(), emitted: new Set() };
 }
 
-export function processToolCallDelta (
+export function processToolCallDelta(
     toolCalls: Array<{ id?: string; function?: { name?: string; arguments?: string | Record<string, unknown>; }; }>,
     state: ToolCallState,
     map: ToolCallIdMap,
@@ -21,14 +21,14 @@ export function processToolCallDelta (
 ): void {
     for ( const toolCall of toolCalls ) {
         const mistralId = toolCall.id;
-        if ( !mistralId || mistralId === 'null' ) {
-            log.debug( '[Mistral] tool call delta skipped — missing or null id' );
+        if ( !mistralId || mistralId === `null` ) {
+            log.debug( `[Mistral] tool call delta skipped — missing or null id` );
             continue;
         }
 
         const vsCodeId = getOrCreateVsCodeToolCallId( map, mistralId );
         const isNew = !state.buffers.has( vsCodeId );
-        const buf = state.buffers.get( vsCodeId ) ?? { argsText: '' };
+        const buf = state.buffers.get( vsCodeId ) ?? { argsText: `` };
 
         if ( toolCall.function?.name ) {
             buf.name = toolCall.function.name;
@@ -38,13 +38,13 @@ export function processToolCallDelta (
         }
 
         const args = toolCall.function?.arguments;
-        if ( typeof args === 'string' ) {
+        if ( typeof args === `string` ) {
             buf.argsText += args;
-        } else if ( args && typeof args === 'object' ) {
+        } else if ( args && typeof args === `object` ) {
             buf.argsText = JSON.stringify( args );
         }
 
-        log.debug( `[Mistral] tool call buffer vsCodeId=${ vsCodeId } name=${ buf.name ?? '(pending)' } argsLen=${ buf.argsText.length }` );
+        log.debug( `[Mistral] tool call buffer vsCodeId=${ vsCodeId } name=${ buf.name ?? `(pending)` } argsLen=${ buf.argsText.length }` );
         state.buffers.set( vsCodeId, buf );
 
         if ( !state.emitted.has( vsCodeId ) && buf.name && buf.argsText ) {
@@ -61,12 +61,12 @@ export function processToolCallDelta (
     }
 }
 
-export function flushToolCallState (
+export function flushToolCallState(
     state: ToolCallState,
     progress: Progress<LanguageModelResponsePart>,
     log: { info: ( msg: string ) => void; warn: ( msg: string ) => void; },
 ): void {
-    for ( const [ vsCodeId, buf ] of state.buffers ) {
+    for ( const [vsCodeId, buf] of state.buffers ) {
         if ( state.emitted.has( vsCodeId ) || !buf.name ) {
             continue;
         }

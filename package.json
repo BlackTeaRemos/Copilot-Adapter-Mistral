@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Mistral Models for Copilot Chat",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "icon": ".github/asset/icon.png",
   "description": "Mistral Models integration for Copilot Chat",
   "categories": [
@@ -17,7 +17,7 @@
     "coding",
     "code assistant",
     "adapter",
-    "inegration",
+    "integration",
     "language model",
     "llm"
   ],
@@ -38,6 +38,8 @@
     "build": "tsdown && node -e \"require('fs').renameSync('dist/extension.cjs', 'dist/extension.js'); require('fs').renameSync('dist/extension.cjs.map', 'dist/extension.js.map')\"",
     "build:prod": "NODE_ENV=production tsdown && node -e \"const fs=require('fs'); fs.renameSync('dist/extension.cjs', 'dist/extension.js'); if(fs.existsSync('dist/extension.cjs.map')) fs.renameSync('dist/extension.cjs.map', 'dist/extension.js.map');\"",
     "check": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "test": "vitest run src",
     "watch": "tsdown --watch",
     "bump:patch": "node scripts/bump.mjs patch",
@@ -58,6 +60,26 @@
       {
         "command": "mistral-adapter.toggleInlineCompletions",
         "title": "Mistral: Toggle Inline Completions (Mistral FIM ↔ Copilot)"
+      },
+      {
+        "command": "mistral-adapter.buildEmbeddingIndex",
+        "title": "Mistral: Build Codebase Embedding Index"
+      },
+      {
+        "command": "mistral-adapter.semanticSearch",
+        "title": "Mistral: Semantic Code Search"
+      },
+      {
+        "command": "mistral-adapter.selectEmbeddingModel",
+        "title": "Mistral: Select Embedding Model"
+      },
+      {
+        "command": "mistral-adapter.clearEmbeddingIndex",
+        "title": "Mistral: Clear Embedding Index"
+      },
+      {
+        "command": "mistral-adapter.embeddingMenu",
+        "title": "Mistral: Embedding Index Actions"
       }
     ],
     "languageModelChatProviders": [
@@ -76,6 +98,36 @@
         "fullName": "Mistral AI",
         "description": "Chat with a Mistral AI model",
         "isSticky": true
+      }
+    ],
+    "languageModelTools": [
+      {
+        "name": "mistral_searchCodebase",
+        "toolReferenceName": "codebaseMistral",
+        "displayName": "Mistral Codebase Search",
+        "icon": "$(database)",
+        "canBeReferencedInPrompt": true,
+        "userDescription": "Semantic code search over the Mistral embedding index of this workspace.",
+        "modelDescription": "Search the user's workspace for relevant code using Mistral embeddings. Returns the most semantically similar code snippets, each labelled with its file path and line range. Use this to find where functionality is implemented or to gather code context before answering. Requires the Mistral embedding index to have been built.",
+        "tags": [
+          "codesearch"
+        ],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Natural-language description or code-like text to search for (function names, comments, behaviour)."
+            },
+            "maxResults": {
+              "type": "number",
+              "description": "Maximum number of snippets to return (1-30, default 10)."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
       }
     ],
     "configuration": {
@@ -129,6 +181,20 @@
           "default": false,
           "markdownDescription": "When enabled, Mistral FIM provides inline completions and Copilot's inline suggestions are disabled (`github.copilot.enable` set to `{ \"*\": false }`). Toggle via the status bar button or the __\"Mistral: Toggle Inline Completions\"__ command, which automatically restores Copilot when turned off.",
           "order": 8
+        },
+        "mistral.embeddingModel": {
+          "type": "string",
+          "enum": [
+            "codestral-embed",
+            "mistral-embed"
+          ],
+          "enumDescriptions": [
+            "Code-tuned embeddings (recommended for source code).",
+            "General-purpose text embeddings."
+          ],
+          "default": "codestral-embed",
+          "markdownDescription": "Mistral embedding model used by codebase semantic search and the `lm` embeddings provider. Only Mistral embedding models are valid. Pick via the __\"Mistral: Select Embedding Model\"__ command. Changing the model triggers a full reindex on the next build.",
+          "order": 9
         }
       }
     }
@@ -143,9 +209,14 @@
     "js-tiktoken": "^1.0.21"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^25.6.0",
     "@types/vscode": "^1.109.0",
+    "@typescript-eslint/eslint-plugin": "^8.60.1",
+    "@typescript-eslint/parser": "^8.60.1",
     "@vscode/vsce": "^3.6.0",
+    "eslint-plugin-import": "^2.32.0",
     "tsdown": "^0.22.2",
     "typescript": "^5.8.3",
     "vitest": "^4.1.4"

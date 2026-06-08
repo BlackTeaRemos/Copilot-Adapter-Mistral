@@ -9,7 +9,7 @@ import type { MistralMessage, MistralToolCall, ToolCallIdMap } from '../types.js
 import { toMistralRole } from './toMistralRole.js';
 import { getOrCreateMistralToolCallId } from './toolCallIdMap.js';
 
-export function toMistralMessages (
+export function toMistralMessages(
     messages: readonly LanguageModelChatMessage[],
     map: ToolCallIdMap,
 ): MistralMessage[] {
@@ -21,7 +21,7 @@ export function toMistralMessages (
     return out;
 }
 
-function buildMistralMessage (
+function buildMistralMessage(
     msg: LanguageModelChatMessage,
     toolNameByCallId: Map<string, string>,
     map: ToolCallIdMap,
@@ -35,16 +35,18 @@ function buildMistralMessage (
 
     processMessageParts( msg, textParts, imageParts, toolNameByCallId, map, toolCalls, toolResults );
 
-    const content = textParts.join( '' );
+    const content = textParts.join( `` );
 
-    let messageContent: MistralMessage[ 'content' ] | undefined;
+    let messageContent: MistralMessage[ `content` ] | undefined;
     if ( imageParts.length > 0 ) {
-        const chunks: Array<{ type: 'text'; text: string; } | { type: 'image_url'; imageUrl: string; }> = [];
-        if ( content.length > 0 ) chunks.push( { type: 'text', text: content } );
+        const chunks: Array<{ type: `text`; text: string; } | { type: `image_url`; imageUrl: string; }> = [];
+        if ( content.length > 0 ) {
+            chunks.push( { type: `text`, text: content } );
+        }
         for ( const img of imageParts ) {
             chunks.push( {
-                type: 'image_url',
-                imageUrl: `data:${ img.mimeType };base64,${ Buffer.from( img.data ).toString( 'base64' ) }`,
+                type: `image_url`,
+                imageUrl: `data:${ img.mimeType };base64,${ Buffer.from( img.data ).toString( `base64` ) }`,
             } );
         }
         messageContent = chunks;
@@ -60,24 +62,24 @@ function buildMistralMessage (
     // Tool results live in their own `tool` role messages — must NOT be preceded by an empty user turn.
     const hasWrapper = messageContent !== undefined || toolCalls.length > 0;
     if ( hasWrapper ) {
-        if ( role === 'assistant' ) {
+        if ( role === `assistant` ) {
             out.push( {
                 role,
                 content: messageContent ?? null,
                 toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
             } );
-        } else if ( role === 'system' ) {
+        } else if ( role === `system` ) {
             // System messages (e.g. compaction summary injected by VS Code) pass through verbatim.
             // Text-only; images and tool parts in a system message are silently dropped.
-            out.push( { role: 'system', content: typeof messageContent === 'string' ? messageContent : '' } );
+            out.push( { role: `system`, content: typeof messageContent === `string` ? messageContent : `` } );
         } else {
-            out.push( { role: 'user', content: messageContent ?? '' } );
+            out.push( { role: `user`, content: messageContent ?? `` } );
         }
     }
 
     for ( const tr of toolResults ) {
         out.push( {
-            role: 'tool',
+            role: `tool`,
             content: tr.content,
             toolCallId: tr.callId,
             name: toolNameByCallId.get( tr.callId ),
@@ -85,7 +87,7 @@ function buildMistralMessage (
     }
 }
 
-function processMessageParts (
+function processMessageParts(
     msg: LanguageModelChatMessage,
     textParts: string[],
     imageParts: Array<{ mimeType: string; data: Uint8Array; }>,
@@ -98,7 +100,7 @@ function processMessageParts (
         if ( part instanceof LanguageModelTextPart ) {
             textParts.push( part.value );
         } else if ( part instanceof LanguageModelDataPart ) {
-            if ( part.mimeType?.startsWith( 'image/' ) ) {
+            if ( part.mimeType?.startsWith( `image/` ) ) {
                 imageParts.push( { mimeType: part.mimeType, data: part.data } );
             } else {
                 textParts.push( `[data:${ part.mimeType }]` );
@@ -108,13 +110,15 @@ function processMessageParts (
             toolNameByCallId.set( mistralId, part.name );
             toolCalls.push( {
                 id: mistralId,
-                type: 'function',
+                type: `function`,
                 function: { name: part.name, arguments: JSON.stringify( part.input ?? {} ) },
             } );
         } else if ( part instanceof LanguageModelToolResultPart ) {
             const mistralId = getOrCreateMistralToolCallId( map, part.callId );
             const resultText = part.content
-                .reduce( ( acc: string, p ) => acc + ( p instanceof LanguageModelTextPart ? p.value : '' ), '' );
+                .reduce( ( acc: string, p ) => {
+                    return acc + ( p instanceof LanguageModelTextPart ? p.value : `` );
+                }, `` );
             toolResults.push( {
                 callId: mistralId,
                 content: resultText.length > 0 ? resultText : JSON.stringify( part.content ),
