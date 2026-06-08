@@ -101,7 +101,7 @@
     "languageModelTools": [
       {
         "name": "mistral_searchCodebase",
-        "toolReferenceName": "mistralCodebase",
+        "toolReferenceName": "codebaseMistral",
         "displayName": "Mistral Codebase Search",
         "icon": "$(database)",
         "canBeReferencedInPrompt": true,

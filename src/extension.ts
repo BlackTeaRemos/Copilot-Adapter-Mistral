@@ -246,22 +246,10 @@ export function activate ( context: vscode.ExtensionContext ) {
         } ),
         vscode.commands.registerCommand( 'mistral-adapter.embeddingMenu', async () => {
             const ready = embeddingIndex.getState() === 'ready';
-            const copilotCodeSearchEnabled = vscode.workspace
-                .getConfiguration( 'github.copilot.chat' )
-                .get<boolean>( 'codesearch.enabled', true );
             const actions = [
                 { label: '$(database) Build / refresh index', detail: 'Embed only files changed since the last build', id: 'build' },
                 ...( ready ? [ { label: '$(search) Semantic search', detail: `Search ${ embeddingIndex.chunkCount } indexed chunks`, id: 'search' } ] : [] ),
                 { label: '$(settings-gear) Select embedding model', detail: `Current: ${ getEmbeddingModel() }`, id: 'model' },
-                {
-                    label: copilotCodeSearchEnabled
-                        ? '$(circle-slash) Disable Copilot #codebase (use Mistral instead)'
-                        : '$(check) Enable Copilot #codebase',
-                    detail: copilotCodeSearchEnabled
-                        ? 'Sets github.copilot.chat.codesearch.enabled = false in workspace settings'
-                        : 'Sets github.copilot.chat.codesearch.enabled = true in workspace settings',
-                    id: 'toggleCopilotCodeSearch',
-                },
                 ...( ready ? [ { label: '$(trash) Clear index', detail: 'Delete the stored index', id: 'clear' } ] : [] ),
             ];
             const pick = await vscode.window.showQuickPick( actions, { title: 'Mistral Embedding Index' } );
@@ -271,16 +259,6 @@ export function activate ( context: vscode.ExtensionContext ) {
                 else if ( pick.id === 'search' ) { await runSemanticSearch(); }
                 else if ( pick.id === 'model' ) { await vscode.commands.executeCommand( 'mistral-adapter.selectEmbeddingModel' ); }
                 else if ( pick.id === 'clear' ) { await vscode.commands.executeCommand( 'mistral-adapter.clearEmbeddingIndex' ); }
-                else if ( pick.id === 'toggleCopilotCodeSearch' ) {
-                    await vscode.workspace
-                        .getConfiguration( 'github.copilot.chat' )
-                        .update( 'codesearch.enabled', !copilotCodeSearchEnabled, vscode.ConfigurationTarget.Workspace );
-                    vscode.window.showInformationMessage(
-                        copilotCodeSearchEnabled
-                            ? 'Copilot #codebase disabled in workspace. Mistral #mistralCodebase will be used instead.'
-                            : 'Copilot #codebase re-enabled in workspace.',
-                    );
-                }
             } catch ( error ) {
                 vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` );
             }
