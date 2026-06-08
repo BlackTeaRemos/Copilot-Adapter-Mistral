@@ -1,0 +1,3 @@
+# Tekken vocab is parsed by splitting on LF; never apply EOL conversion or it corrupts.
+assets/tekken.bpe -text
+assets/tekken.meta.json -text

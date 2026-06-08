@@ -37,6 +37,7 @@ import {
 import type { StreamContext } from './stream/index.js';
 import { assertChatStreamRequest, toModelOptions, getNumberOption, getBooleanOption } from './assertions/index.js';
 import { TokenizerCalibration } from './cacheCalibration.js';
+import { getMistralTokenizer } from './tokenizer/mistralTokenizer.js';
 import { computePromptCacheKey } from './promptCacheKey.js';
 import { validateApiKey, setApiKey, initClient, type AuthDeps } from './auth.js';
 import { updateStatusBar } from './statusBar.js';
@@ -250,16 +251,30 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         }
     }
 
+    /**
+     * Returns the active token encoder. Prefers the bundled native Mistral
+     * (tekken) tokenizer — exact counts, no calibration needed — and falls back
+     * to cl100k_base + the learned scale factor when the tekken assets are
+     * unavailable.
+     */
+    private getEncoder (): { enc: Tiktoken; native: boolean; } {
+        const native = getMistralTokenizer( this.context.extensionUri?.fsPath ?? '' );
+        if ( native ) { return { enc: native, native: true }; }
+        if ( !this.tokenizer ) { this.tokenizer = getEncoding( 'cl100k_base' ); }
+        return { enc: this.tokenizer, native: false };
+    }
+
     async provideTokenCount (
         model: LanguageModelChatInformation,
         text: string | LanguageModelChatMessage,
         _token: CancellationToken,
     ): Promise<number> {
-        if ( !this.tokenizer ) { this.tokenizer = getEncoding( 'cl100k_base' ); }
+        const { enc, native } = this.getEncoder();
         const textContent = typeof text === 'string'
             ? text
             : text.content.map( part => extractText( part as any ) ).join( '' );
-        const raw = this.tokenizer.encode( textContent ).length;
+        const raw = enc.encode( textContent ).length;
+        if ( native ) { return raw; }
         const scale = this.calibration.scale( model.id );
         return scale !== undefined ? Math.round( raw * scale ) : raw;
     }
@@ -276,11 +291,13 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
     }
 
     private recordCalibration ( modelId: string, lastPrompt: number, messages: Array<LanguageModelChatMessage> ): void {
-        if ( !this.tokenizer ) { this.tokenizer = getEncoding( 'cl100k_base' ); }
+        const { enc, native } = this.getEncoder();
+        // Native tekken counts are exact, so no scale factor is needed.
+        if ( native ) { return; }
         const requestTiktoken = messages
             .flatMap( m => m.content )
             .map( part => extractText( part as any ) )
-            .reduce( ( sum, s ) => sum + this.tokenizer!.encode( s ).length, 0 );
+            .reduce( ( sum, s ) => sum + enc.encode( s ).length, 0 );
         this.calibration.record( modelId, lastPrompt, requestTiktoken );
     }
 
