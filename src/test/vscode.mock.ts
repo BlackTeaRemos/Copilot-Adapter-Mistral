@@ -96,6 +96,10 @@ export class LanguageModelDataPart {
     ) { }
 }
 
+export class LanguageModelToolResult {
+    constructor ( public readonly content: unknown[] ) { }
+}
+
 export const window = {
     showInputBox: vi.fn(),
     showErrorMessage: vi.fn(),
@@ -120,6 +124,7 @@ export const window = {
 
 export const lm = {
     registerLanguageModelChatProvider: vi.fn().mockReturnValue( { dispose: vi.fn() } ),
+    registerTool: vi.fn().mockReturnValue( { dispose: vi.fn() } ),
 };
 
 export const commands = {

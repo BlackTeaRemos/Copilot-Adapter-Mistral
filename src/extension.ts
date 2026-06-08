@@ -6,6 +6,7 @@ import { getStatusCode, getErrorName, getErrorMessage } from './assertions/index
 import { registerMistralEmbeddingsProviders } from './embeddings/embeddingsProvider.js';
 import { CodebaseEmbeddingIndex } from './embeddings/codebaseIndex.js';
 import { EmbeddingStatus } from './embeddings/embeddingStatus.js';
+import { registerCodebaseSearchTool } from './embeddings/searchTool.js';
 import { EMBEDDING_MODELS, coerceEmbeddingModel, type EmbeddingModel } from './embeddings/mistralEmbeddings.js';
 
 function getUserFriendlyError ( error: unknown ): string {
@@ -165,6 +166,8 @@ export function activate ( context: vscode.ExtensionContext ) {
     const embeddingIndex = new CodebaseEmbeddingIndex( context, getClient, logOutputChannel, getEmbeddingModel );
     const embeddingStatus = new EmbeddingStatus( context, embeddingIndex, getEmbeddingModel );
     context.subscriptions.push( embeddingIndex );
+    // Expose the index to chat models (Copilot agent mode, @mistral, #mistralCodebase).
+    context.subscriptions.push( registerCodebaseSearchTool( embeddingIndex, logOutputChannel ) );
     void embeddingIndex.load().then( () => embeddingStatus.render() );
     embeddingStatus.render();
 

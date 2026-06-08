@@ -77,9 +77,10 @@ describe( 'extension', () => {
             activate( mockContext );
             expect( window.createOutputChannel ).toHaveBeenCalledWith( 'Mistral Models', { log: true } );
             expect( window.createStatusBarItem ).toHaveBeenCalled();
-            // push call index 9: output channel + status bar (after bundle, inline register, toggle statusbar,
-            // toggle command, embeddings provider, embedding status, embedding index, embeddings commands, config watcher)
-            expect( mockContext.subscriptions.push.mock.calls[ 9 ] ).toHaveLength( 2 );
+            // push call index 10: output channel + status bar (after bundle, inline register, toggle statusbar,
+            // toggle command, embeddings provider, embedding status, embedding index, search tool, embeddings
+            // commands, config watcher)
+            expect( mockContext.subscriptions.push.mock.calls[ 10 ] ).toHaveLength( 2 );
         } );
 
         it( 'creates the @mistral chat participant', () => {
@@ -89,10 +90,10 @@ describe( 'extension', () => {
 
         it( 'pushes participant disposable into context.subscriptions', () => {
             activate( mockContext );
-            // 11 push calls: bundle, inline register, toggle statusbar, toggle command, embeddings provider,
-            // embedding status, embedding index, embeddings commands, config watcher, output+status, participant
-            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 11 );
-            expect( mockContext.subscriptions.push.mock.calls[ 10 ] ).toHaveLength( 1 );
+            // 12 push calls: bundle, inline register, toggle statusbar, toggle command, embeddings provider,
+            // embedding status, embedding index, search tool, embeddings commands, config watcher, output+status, participant
+            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 12 );
+            expect( mockContext.subscriptions.push.mock.calls[ 11 ] ).toHaveLength( 1 );
         } );
     } );
 

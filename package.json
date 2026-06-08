@@ -98,6 +98,36 @@
         "isSticky": true
       }
     ],
+    "languageModelTools": [
+      {
+        "name": "mistral_searchCodebase",
+        "toolReferenceName": "mistralCodebase",
+        "displayName": "Mistral Codebase Search",
+        "icon": "$(database)",
+        "canBeReferencedInPrompt": true,
+        "userDescription": "Semantic code search over the Mistral embedding index of this workspace.",
+        "modelDescription": "Search the user's workspace for relevant code using Mistral embeddings. Returns the most semantically similar code snippets, each labelled with its file path and line range. Use this to find where functionality is implemented or to gather code context before answering. Requires the Mistral embedding index to have been built.",
+        "tags": [
+          "codesearch"
+        ],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Natural-language description or code-like text to search for (function names, comments, behaviour)."
+            },
+            "maxResults": {
+              "type": "number",
+              "description": "Maximum number of snippets to return (1-30, default 10)."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    ],
     "configuration": {
       "title": "Mistral Models",
       "properties": {
