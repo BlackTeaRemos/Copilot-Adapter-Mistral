@@ -3,6 +3,10 @@ import { MistralChatModelProvider } from './provider.js';
 import { MistralInlineCompletionProvider } from './inlineCompletionProvider.js';
 import { InlineCompletionToggle } from './inlineCompletionToggle.js';
 import { getStatusCode, getErrorName, getErrorMessage } from './assertions/index.js';
+import { registerMistralEmbeddingsProviders } from './embeddings/embeddingsProvider.js';
+import { CodebaseEmbeddingIndex } from './embeddings/codebaseIndex.js';
+import { EmbeddingStatus } from './embeddings/embeddingStatus.js';
+import { EMBEDDING_MODELS, coerceEmbeddingModel, type EmbeddingModel } from './embeddings/mistralEmbeddings.js';
 
 function getUserFriendlyError ( error: unknown ): string {
     const statusCode = getStatusCode( error );
@@ -149,6 +153,113 @@ export function activate ( context: vscode.ExtensionContext ) {
     toggle.render();
     context.subscriptions.push(
         vscode.commands.registerCommand( 'mistral-adapter.toggleInlineCompletions', () => toggle.toggle() ),
+    );
+
+    // ── Embeddings: lm provider (best-effort) + codebase semantic search ──────
+    const getClient = () => provider.ensureClient( true );
+    context.subscriptions.push( registerMistralEmbeddingsProviders( getClient, logOutputChannel ) );
+
+    const getEmbeddingModel = (): EmbeddingModel =>
+        coerceEmbeddingModel( vscode.workspace.getConfiguration( 'mistral' ).get( 'embeddingModel' ) );
+
+    const embeddingIndex = new CodebaseEmbeddingIndex( context, getClient, logOutputChannel, getEmbeddingModel );
+    const embeddingStatus = new EmbeddingStatus( context, embeddingIndex, getEmbeddingModel );
+    context.subscriptions.push( embeddingIndex );
+    void embeddingIndex.load().then( () => embeddingStatus.render() );
+    embeddingStatus.render();
+
+    const runSemanticSearch = async (): Promise<void> => {
+        if ( !vscode.workspace.workspaceFolders?.length ) {
+            vscode.window.showWarningMessage( 'Mistral: open a folder to use semantic search.' );
+            return;
+        }
+        const query = await vscode.window.showInputBox( {
+            title: 'Mistral: Semantic Code Search',
+            placeHolder: 'Describe what you are looking for…',
+        } );
+        if ( !query ) { return; }
+        const results = await vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Notification, title: 'Mistral: Searching…', cancellable: true },
+            ( _p, token ) => embeddingIndex.search( query, 15, token ),
+        );
+        if ( results.length === 0 ) {
+            vscode.window.showInformationMessage( 'Mistral: no matches. Build the index first via "Mistral: Build Codebase Embedding Index".' );
+            return;
+        }
+        const items: Array<vscode.QuickPickItem & { uri: vscode.Uri; line: number; }> = results.map( r => ( {
+            label: `$(file-code) ${ r.entry.file }:${ r.entry.startLine }`,
+            description: `${ ( r.score * 100 ).toFixed( 0 ) }%`,
+            detail: r.entry.text.split( '\n' ).find( l => l.trim().length > 0 )?.slice( 0, 120 ),
+            uri: vscode.Uri.joinPath( vscode.workspace.workspaceFolders![ 0 ].uri, r.entry.file ),
+            line: r.entry.startLine,
+        } ) );
+        const pick = await vscode.window.showQuickPick( items, { title: `Mistral: ${ results.length } matches`, matchOnDetail: true } );
+        if ( !pick ) { return; }
+        const doc = await vscode.workspace.openTextDocument( pick.uri );
+        const editor = await vscode.window.showTextDocument( doc );
+        const pos = new vscode.Position( Math.max( 0, pick.line - 1 ), 0 );
+        editor.selection = new vscode.Selection( pos, pos );
+        editor.revealRange( new vscode.Range( pos, pos ), vscode.TextEditorRevealType.InCenter );
+    };
+
+    const runBuildIndex = async (): Promise<void> => {
+        const result = await vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Notification, title: 'Mistral: Building codebase embedding index', cancellable: true },
+            ( progress, token ) => embeddingIndex.build( progress, token ),
+        );
+        vscode.window.showInformationMessage(
+            result.total > 0
+                ? `Mistral: index ready — ${ result.total } chunks (${ result.embedded } embedded, ${ result.reused } reused).`
+                : 'Mistral: no indexable files found.',
+        );
+    };
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand( 'mistral-adapter.buildEmbeddingIndex', async () => {
+            try { await runBuildIndex(); }
+            catch ( error ) { vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` ); }
+        } ),
+        vscode.commands.registerCommand( 'mistral-adapter.semanticSearch', async () => {
+            try { await runSemanticSearch(); }
+            catch ( error ) { vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` ); }
+        } ),
+        vscode.commands.registerCommand( 'mistral-adapter.selectEmbeddingModel', async () => {
+            const current = getEmbeddingModel();
+            const pick = await vscode.window.showQuickPick(
+                EMBEDDING_MODELS.map( m => ( {
+                    label: m,
+                    description: m === current ? '$(check) current' : '',
+                    detail: m === 'codestral-embed' ? 'Code-tuned embeddings (recommended for source)' : 'General-purpose text embeddings',
+                } ) ),
+                { title: 'Mistral: Select Embedding Model' },
+            );
+            if ( !pick ) { return; }
+            await vscode.workspace.getConfiguration( 'mistral' ).update( 'embeddingModel', pick.label, vscode.ConfigurationTarget.Global );
+            embeddingStatus.render();
+        } ),
+        vscode.commands.registerCommand( 'mistral-adapter.clearEmbeddingIndex', async () => {
+            await embeddingIndex.clear();
+            vscode.window.showInformationMessage( 'Mistral: embedding index cleared.' );
+        } ),
+        vscode.commands.registerCommand( 'mistral-adapter.embeddingMenu', async () => {
+            const ready = embeddingIndex.getState() === 'ready';
+            const actions = [
+                { label: '$(database) Build / refresh index', detail: 'Embed only files changed since the last build', id: 'build' },
+                ...( ready ? [ { label: '$(search) Semantic search', detail: `Search ${ embeddingIndex.chunkCount } indexed chunks`, id: 'search' } ] : [] ),
+                { label: '$(settings-gear) Select embedding model', detail: `Current: ${ getEmbeddingModel() }`, id: 'model' },
+                ...( ready ? [ { label: '$(trash) Clear index', detail: 'Delete the stored index', id: 'clear' } ] : [] ),
+            ];
+            const pick = await vscode.window.showQuickPick( actions, { title: 'Mistral Embedding Index' } );
+            if ( !pick ) { return; }
+            try {
+                if ( pick.id === 'build' ) { await runBuildIndex(); }
+                else if ( pick.id === 'search' ) { await runSemanticSearch(); }
+                else if ( pick.id === 'model' ) { await vscode.commands.executeCommand( 'mistral-adapter.selectEmbeddingModel' ); }
+                else if ( pick.id === 'clear' ) { await vscode.commands.executeCommand( 'mistral-adapter.clearEmbeddingIndex' ); }
+            } catch ( error ) {
+                vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` );
+            }
+        } ),
     );
 
     void validateInlineCompletionModel( provider, logOutputChannel );

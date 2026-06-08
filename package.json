@@ -58,6 +58,26 @@
       {
         "command": "mistral-adapter.toggleInlineCompletions",
         "title": "Mistral: Toggle Inline Completions (Mistral FIM ↔ Copilot)"
+      },
+      {
+        "command": "mistral-adapter.buildEmbeddingIndex",
+        "title": "Mistral: Build Codebase Embedding Index"
+      },
+      {
+        "command": "mistral-adapter.semanticSearch",
+        "title": "Mistral: Semantic Code Search"
+      },
+      {
+        "command": "mistral-adapter.selectEmbeddingModel",
+        "title": "Mistral: Select Embedding Model"
+      },
+      {
+        "command": "mistral-adapter.clearEmbeddingIndex",
+        "title": "Mistral: Clear Embedding Index"
+      },
+      {
+        "command": "mistral-adapter.embeddingMenu",
+        "title": "Mistral: Embedding Index Actions"
       }
     ],
     "languageModelChatProviders": [
@@ -129,6 +149,20 @@
           "default": false,
           "markdownDescription": "When enabled, Mistral FIM provides inline completions and Copilot's inline suggestions are disabled (`github.copilot.enable` set to `{ \"*\": false }`). Toggle via the status bar button or the __\"Mistral: Toggle Inline Completions\"__ command, which automatically restores Copilot when turned off.",
           "order": 8
+        },
+        "mistral.embeddingModel": {
+          "type": "string",
+          "enum": [
+            "codestral-embed",
+            "mistral-embed"
+          ],
+          "enumDescriptions": [
+            "Code-tuned embeddings (recommended for source code).",
+            "General-purpose text embeddings."
+          ],
+          "default": "codestral-embed",
+          "markdownDescription": "Mistral embedding model used by codebase semantic search and the `lm` embeddings provider. Only Mistral embedding models are valid. Pick via the __\"Mistral: Select Embedding Model\"__ command. Changing the model triggers a full reindex on the next build.",
+          "order": 9
         }
       }
     }
