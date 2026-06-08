@@ -5,9 +5,32 @@ import type { EmbeddingsLogger } from './mistralEmbeddings.js';
 /** Tool id — must match the `languageModelTools` contribution in package.json. */
 export const SEARCH_TOOL_NAME = 'mistral_searchCodebase';
 
+/** Drop hits weaker than this cosine score — they add noise, not signal. */
+export const MIN_SCORE = 0.25;
+/** Cap total returned snippet text so the tool stays within the model's budget. */
+export const MAX_RESULT_CHARS = 8000;
+
 export interface SearchToolInput {
     query: string;
     maxResults?: number;
+}
+
+/**
+ * Keeps results in order until their combined text reaches `maxChars` (always
+ * keeps at least the first hit), so a tool call never floods the model context.
+ */
+export function limitByCharBudget<T extends { entry: { text: string; }; }> (
+    results: readonly T[],
+    maxChars: number,
+): T[] {
+    const out: T[] = [];
+    let total = 0;
+    for ( const r of results ) {
+        if ( out.length > 0 && total + r.entry.text.length > maxChars ) { break; }
+        out.push( r );
+        total += r.entry.text.length;
+    }
+    return out;
 }
 
 /**
@@ -33,16 +56,30 @@ export function createSearchTool (
     index: CodebaseEmbeddingIndex,
     log: EmbeddingsLogger,
 ): vscode.LanguageModelTool<SearchToolInput> {
+    const text = ( s: string ) => new vscode.LanguageModelToolResult( [ new vscode.LanguageModelTextPart( s ) ] );
     return {
         async invoke ( options, token ) {
             const query = options.input?.query?.trim();
-            if ( !query ) {
-                return new vscode.LanguageModelToolResult( [ new vscode.LanguageModelTextPart( 'No query provided.' ) ] );
-            }
+            if ( !query ) { return text( 'No query provided.' ); }
             const maxResults = Math.min( Math.max( options.input.maxResults ?? 10, 1 ), 30 );
+
+            // Auto-build on first use so the model gets results without a manual step.
+            await index.load();
+            if ( index.getState() !== 'ready' ) {
+                log.info( '[Mistral] searchCodebase: index empty — building before first search.' );
+                try {
+                    await index.build( undefined, token );
+                } catch ( err ) {
+                    return text( `Could not build the Mistral embedding index: ${ err instanceof Error ? err.message : String( err ) }` );
+                }
+            }
+
             log.info( `[Mistral] searchCodebase tool: "${ query }" (max ${ maxResults })` );
-            const results = await index.search( query, maxResults, token );
-            return new vscode.LanguageModelToolResult( [ new vscode.LanguageModelTextPart( formatResults( results ) ) ] );
+            const all = await index.search( query, maxResults, token );
+            // Prefer strong matches; if none clear the bar, fall back to the top few.
+            const strong = all.filter( r => r.score >= MIN_SCORE );
+            const chosen = limitByCharBudget( strong.length > 0 ? strong : all.slice( 0, 3 ), MAX_RESULT_CHARS );
+            return text( formatResults( chosen ) );
         },
         async prepareInvocation ( options ) {
             return { invocationMessage: `Searching Mistral codebase index for “${ options.input?.query ?? '' }”` };
