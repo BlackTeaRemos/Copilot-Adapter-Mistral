@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Mistral Models for Copilot Chat",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "icon": ".github/asset/icon.png",
   "description": "Mistral Models integration for Copilot Chat",
   "categories": [
@@ -52,6 +52,10 @@
       {
         "command": "mistral-adapter.manageApiKey",
         "title": "Mistral: Manage API Key"
+      },
+      {
+        "command": "mistral-adapter.signIn",
+        "title": "Mistral: Sign In with Browser"
       },
       {
         "command": "mistral-adapter.selectInlineCompletionModel",
