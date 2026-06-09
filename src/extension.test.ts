@@ -16,10 +16,18 @@ import { activate, deactivate } from './extension.js';
 vi.mock( `./provider`, () => {
     const mockDispose = vi.fn();
     const mockSetApiKey = vi.fn();
+    const mockOnDidChange = vi.fn().mockReturnValue( { dispose: vi.fn() } );
     const mockProvider = {
         setApiKey: mockSetApiKey,
+        signInWithBrowser: vi.fn(),
         dispose: mockDispose,
+        isAuthenticated: vi.fn().mockReturnValue( false ),
+        refreshStatusBar: vi.fn(),
+        currentModelName: ``,
+        onDidChangeLanguageModelChatInformation: mockOnDidChange,
         _onDidChangeLanguageModelChatInformation: { fire: vi.fn(), dispose: vi.fn() },
+        fetchModels: vi.fn().mockResolvedValue( [] ),
+        ensureClient: vi.fn().mockResolvedValue( null ),
     };
 
     return {
@@ -77,10 +85,8 @@ describe( `extension`, () => {
             activate( mockContext );
             expect( window.createOutputChannel ).toHaveBeenCalledWith( `Mistral Models`, { log: true } );
             expect( window.createStatusBarItem ).toHaveBeenCalled();
-            // push call index 10: output channel + status bar (after bundle, inline register, toggle statusbar,
-            // toggle command, embeddings provider, embedding status, embedding index, search tool, embeddings
-            // commands, config watcher)
-            expect( mockContext.subscriptions.push.mock.calls[ 10 ] ).toHaveLength( 2 );
+            // push call index 11: output channel + status bar
+            expect( mockContext.subscriptions.push.mock.calls[ 11 ] ).toHaveLength( 2 );
         } );
 
         it( `creates the @mistral chat participant`, () => {
@@ -90,10 +96,11 @@ describe( `extension`, () => {
 
         it( `pushes participant disposable into context.subscriptions`, () => {
             activate( mockContext );
-            // 12 push calls: bundle, inline register, toggle statusbar, toggle command, embeddings provider,
-            // embedding status, embedding index, search tool, embeddings commands, config watcher, output+status, participant
-            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 12 );
-            expect( mockContext.subscriptions.push.mock.calls[ 11 ] ).toHaveLength( 1 );
+            // 13 push calls: bundle(5), inline register, toggle command, embeddingsProvider,
+            // mistralBar(3 items), embeddingIndex, searchTool, authChangeListener,
+            // embeddingStatus.onChange, embeddingCommands, configWatcher, output+statusBar(2), participant(1)
+            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 13 );
+            expect( mockContext.subscriptions.push.mock.calls[ 12 ] ).toHaveLength( 1 );
         } );
     } );
 
