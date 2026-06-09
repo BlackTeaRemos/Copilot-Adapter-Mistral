@@ -5,17 +5,10 @@ const COPILOT_SECTION = `github.copilot`;
 const COPILOT_ENABLE = `enable`;
 
 export class InlineCompletionToggle {
-    private readonly statusBar: vscode.StatusBarItem;
-
     constructor(
         private readonly context: vscode.ExtensionContext,
         private readonly log: vscode.LogOutputChannel,
-    ) {
-        this.statusBar = vscode.window.createStatusBarItem( vscode.StatusBarAlignment.Right, 100 );
-        this.statusBar.name = `Mistral Inline Completions`;
-        this.statusBar.command = `mistral-adapter.toggleInlineCompletions`;
-        this.context.subscriptions.push( this.statusBar );
-    }
+    ) { }
 
     public isEnabled(): boolean {
         return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionEnabled` ) ?? false;
@@ -25,25 +18,7 @@ export class InlineCompletionToggle {
         return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionModel` ) ?? ``;
     }
 
-    public render(): void {
-        const enabled = this.isEnabled();
-        const modelId = this.getModelId();
-
-        if ( enabled && modelId !== `` ) {
-            this.statusBar.text = `$(sparkle) Mistral FIM`;
-            this.statusBar.tooltip = `Mistral inline completions ON (${ modelId }) — Copilot inline disabled. Click to switch back to Copilot.`;
-            this.statusBar.backgroundColor = undefined;
-        } else if ( enabled && modelId === `` ) {
-            this.statusBar.text = `$(warning) Mistral FIM`;
-            this.statusBar.tooltip = `Mistral inline completions ON but no model selected. Click to pick a model, or toggle off.`;
-            this.statusBar.backgroundColor = new vscode.ThemeColor( `statusBarItem.warningBackground` );
-        } else {
-            this.statusBar.text = `$(circle-slash) Mistral FIM`;
-            this.statusBar.tooltip = `Mistral inline completions OFF — Copilot active. Click to enable Mistral FIM.`;
-            this.statusBar.backgroundColor = undefined;
-        }
-        this.statusBar.show();
-    }
+    public render(): void { }
 
     public async enable(): Promise<void> {
         const copilotCfg = vscode.workspace.getConfiguration( COPILOT_SECTION );

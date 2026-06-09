@@ -39,7 +39,7 @@ import { assertChatStreamRequest, toModelOptions, getNumberOption, getBooleanOpt
 import { TokenizerCalibration } from './cacheCalibration.js';
 import { getMistralTokenizer } from './tokenizer/mistralTokenizer.js';
 import { computePromptCacheKey } from './promptCacheKey.js';
-import { validateApiKey, setApiKey, initClient, type AuthDeps } from './auth.js';
+import { validateApiKey, setApiKey, signInWithBrowser, initClient, type AuthDeps } from './auth/index.js';
 import { updateStatusBar } from './statusBar.js';
 
 function extractText( part: unknown ): string {
@@ -78,6 +78,21 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
     private readonly _onDidChangeLanguageModelChatInformation = new EventEmitter<void>();
 
     readonly onDidChangeLanguageModelChatInformation: Event<void> = this._onDidChangeLanguageModelChatInformation.event;
+
+    isAuthenticated(): boolean {
+        return this.client !== null;
+    }
+
+    refreshStatusBar(): void {
+        if ( !this.statusBarItem ) return;
+        if ( !this.isAuthenticated() ) {
+            updateStatusBar( this.statusBarItem, { input: 0, output: 0, cached: 0, lastPrompt: 0 }, ``, ``, this.calibration, false );
+        }
+    }
+
+    get currentModelName(): string {
+        return this.lastModelName;
+    }
 
     constructor(
         private readonly context: ExtensionContext,
@@ -125,6 +140,10 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
     public setApiKey(): Promise<string | undefined> {
         return setApiKey( this.authDeps() );
+    }
+
+    public signInWithBrowser(): Promise<string | undefined> {
+        return signInWithBrowser( this.authDeps() );
     }
 
     public validateApiKey( apiKey: string ): Promise<boolean> {
@@ -280,7 +299,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
                 this.logModelRedirect( ctx, model.id );
             }
             if ( this.statusBarItem ) {
-                updateStatusBar( this.statusBarItem, this.tokensUsedThisSession, this.lastModelName, this.lastModelId, this.calibration );
+                updateStatusBar( this.statusBarItem, this.tokensUsedThisSession, this.lastModelName, this.lastModelId, this.calibration, true );
             }
             this.log.debug(
                 `[Mistral] stream complete — model=${ ctx.servedModel ?? model.id } input=${ this.tokensUsedThisSession.input } output=${ this.tokensUsedThisSession.output } cached=${ this.tokensUsedThisSession.cached }` +

@@ -101,7 +101,13 @@ export class LanguageModelToolResult {
 
 export const window = {
     showInputBox: vi.fn(),
+    showQuickPick: vi.fn(),
     showErrorMessage: vi.fn(),
+    withProgress: vi.fn( async( _opts: unknown, task: ( progress: unknown, token: unknown ) => unknown ) => {
+        return task( { report: vi.fn() }, { isCancellationRequested: false, onCancellationRequested: () => {
+            return  { dispose: vi.fn() };
+        } } );
+    } ),
     createOutputChannel: vi.fn().mockReturnValue( {
         info: vi.fn(),
         debug: vi.fn(),
@@ -146,6 +152,36 @@ export enum ConfigurationTarget {
     Global = 1,
     Workspace = 2,
     WorkspaceFolder = 3,
+}
+
+export enum ProgressLocation {
+    SourceControl = 1,
+    Window = 10,
+    Notification = 15,
+}
+
+export const env = {
+    openExternal: vi.fn().mockResolvedValue( true ),
+};
+
+export class CancellationTokenSource {
+    private _listeners: Array<() => void> = [];
+    public token = {
+        isCancellationRequested: false,
+        onCancellationRequested: ( listener: () => void ) => {
+            this._listeners.push( listener );
+            return { dispose: vi.fn() };
+        },
+    };
+    public cancel() {
+        this.token.isCancellationRequested = true;
+        for ( const l of this._listeners ) {
+            l();
+        }
+    }
+    public dispose() {
+        this._listeners = [];
+    }
 }
 
 export class Position {
@@ -210,6 +246,11 @@ export class ChatResponseMarkdownPart {
 }
 
 export const Uri = {
+    parse: vi.fn( ( value: string ) => {
+        return  { toString: () => {
+            return value;
+        }, value };
+    } ),
     file: vi.fn().mockReturnValue( undefined ),
     joinPath: vi.fn().mockReturnValue( undefined ),
 };

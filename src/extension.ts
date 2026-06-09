@@ -8,6 +8,7 @@ import { CodebaseEmbeddingIndex } from './embeddings/codebaseIndex.js';
 import { EmbeddingStatus } from './embeddings/embeddingStatus.js';
 import { registerCodebaseSearchTool } from './embeddings/searchTool.js';
 import { EMBEDDING_MODELS, coerceEmbeddingModel, type EmbeddingModel } from './embeddings/mistralEmbeddings.js';
+import { MistralStatusBar } from './mistralStatusBar.js';
 
 function getUserFriendlyError( error: unknown ): string {
     const statusCode = getStatusCode( error );
@@ -107,6 +108,9 @@ export function activate( context: vscode.ExtensionContext ) {
         vscode.commands.registerCommand( `mistral-adapter.manageApiKey`, async() => {
             await provider.setApiKey();
         } ),
+        vscode.commands.registerCommand( `mistral-adapter.signIn`, async() => {
+            await provider.signInWithBrowser();
+        } ),
         vscode.commands.registerCommand( `mistral-adapter.selectInlineCompletionModel`, async() => {
             const qp = vscode.window.createQuickPick();
             qp.title = `Select Inline Completion Model`;
@@ -127,7 +131,7 @@ export function activate( context: vscode.ExtensionContext ) {
                 picked: currentId === ``,
             };
             const modelItems: vscode.QuickPickItem[] = fimModels.map( m => {
-                return  {
+                return {
                     label: m.name,
                     description: m.id,
                     detail: m.detail,
@@ -157,9 +161,11 @@ export function activate( context: vscode.ExtensionContext ) {
                 return qp.dispose();
             } );
         } ),
-        { dispose: () => {
-            return provider.dispose();
-        } },
+        {
+            dispose: () => {
+                return provider.dispose();
+            },
+        },
     );
 
     const inlineProvider = new MistralInlineCompletionProvider( provider, logOutputChannel );
@@ -178,7 +184,6 @@ export function activate( context: vscode.ExtensionContext ) {
         } ),
     );
 
-    // ── Embeddings: lm provider (best-effort) + codebase semantic search ──────
     const getClient = () => {
         return provider.ensureClient( true );
     };
@@ -188,14 +193,28 @@ export function activate( context: vscode.ExtensionContext ) {
         return coerceEmbeddingModel( vscode.workspace.getConfiguration( `mistral` ).get( `embeddingModel` ) );
     };
 
-    const embeddingIndex = new CodebaseEmbeddingIndex( context, getClient, logOutputChannel, getEmbeddingModel );
-    const embeddingStatus = new EmbeddingStatus( context, embeddingIndex, getEmbeddingModel );
-    context.subscriptions.push( embeddingIndex );
-    // Expose the index to chat models (Copilot agent mode, @mistral, #mistralCodebase).
-    context.subscriptions.push( registerCodebaseSearchTool( embeddingIndex, logOutputChannel ) );
-    void embeddingIndex.load().then( () => {
-        return embeddingStatus.render();
+    const mistralBar = new MistralStatusBar( context );
+    const refreshMistralBar = () => mistralBar.update( {
+        authenticated: provider.isAuthenticated(),
+        fimEnabled: toggle.isEnabled(),
+        fimModelId: vscode.workspace.getConfiguration( `mistral` ).get<string>( `inlineCompletionModel` ) ?? ``,
     } );
+
+    const embeddingIndex = new CodebaseEmbeddingIndex( context, getClient, logOutputChannel, getEmbeddingModel );
+    const embeddingStatus = new EmbeddingStatus( context, embeddingIndex, getEmbeddingModel, s => mistralBar.update( {
+        indexState: s.indexState,
+        indexChunkCount: s.chunkCount,
+        indexFileCount: s.fileCount,
+        indexModel: s.model,
+    } ) );
+    context.subscriptions.push( embeddingIndex );
+    context.subscriptions.push( registerCodebaseSearchTool( embeddingIndex, logOutputChannel ) );
+    context.subscriptions.push( provider.onDidChangeLanguageModelChatInformation( () => {
+        provider.refreshStatusBar();
+        refreshMistralBar();
+    } ) );
+    void embeddingIndex.load().then( () => embeddingStatus.render() );
+    refreshMistralBar();
     embeddingStatus.render();
 
     const runSemanticSearch = async(): Promise<void> => {
@@ -221,7 +240,7 @@ export function activate( context: vscode.ExtensionContext ) {
             return;
         }
         const items: Array<vscode.QuickPickItem & { uri: vscode.Uri; line: number; }> = results.map( r => {
-            return  {
+            return {
                 label: `$(file-code) ${ r.entry.file }:${ r.entry.startLine }`,
                 description: `${ ( r.score * 100 ).toFixed( 0 ) }%`,
                 detail: r.entry.text.split( `\n` ).find( l => {
@@ -275,7 +294,7 @@ export function activate( context: vscode.ExtensionContext ) {
             const current = getEmbeddingModel();
             const pick = await vscode.window.showQuickPick(
                 EMBEDDING_MODELS.map( m => {
-                    return  {
+                    return {
                         label: m,
                         description: m === current ? `$(check) current` : ``,
                         detail: m === `codestral-embed` ? `Code-tuned embeddings (recommended for source)` : `General-purpose text embeddings`,
@@ -332,6 +351,7 @@ export function activate( context: vscode.ExtensionContext ) {
                 e.affectsConfiguration( `mistral.inlineCompletionEnabled` )
             ) {
                 toggle.render();
+                refreshMistralBar();
             }
         } ),
     );
