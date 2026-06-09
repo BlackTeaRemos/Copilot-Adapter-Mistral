@@ -13,6 +13,7 @@ export async function initClient( silent: boolean, deps: AuthDeps ): Promise<boo
         apiKey = await setApiKey( deps );
     } else if ( apiKey ) {
         deps.setClient( createMistralClient( apiKey, log ) );
+        deps.fireModelInfoChange();
     }
     log.debug( `[Mistral] initClient result: ` + !!apiKey );
     return !!apiKey;
