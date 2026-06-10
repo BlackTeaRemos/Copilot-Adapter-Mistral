@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { Tiktoken } from 'js-tiktoken/lite';
+import { Tiktoken } from 'js-tiktoken';
 
 /**
  * Native Mistral *tekken* tokenizer.
@@ -30,7 +30,7 @@ type TekkenMeta = { pat_str: string; version?: string; };
  *
  * @param extensionPath Absolute path to the installed extension root.
  */
-export function getMistralTokenizer( extensionPath: string ): Tiktoken | null {
+export function getMistralTokenizer ( extensionPath: string ): Tiktoken | null {
     if ( cached !== undefined ) {
         return cached;
     }
@@ -46,6 +46,6 @@ export function getMistralTokenizer( extensionPath: string ): Tiktoken | null {
 }
 
 /** Test-only: drop the cached instance so a later load re-reads the assets. */
-export function resetMistralTokenizer(): void {
+export function resetMistralTokenizer (): void {
     cached = undefined;
 }
