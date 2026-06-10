@@ -7,6 +7,17 @@ import {
     window,
 } from 'vscode';
 import { MistralChatModelProvider } from './provider.js';
+import { createMistralClient } from './client/index.js';
+
+vi.mock( `./client/index.js`, async ( importOriginal ) => {
+    const actual = await importOriginal<typeof import( './client/index.js' )>();
+    return {
+        ...actual,
+        createMistralClient: vi.fn().mockReturnValue( {
+            models: { list: vi.fn().mockResolvedValue( {} ) },
+        } ),
+    };
+} );
 
 const mockContext = {
     secrets: {
@@ -62,7 +73,7 @@ describe( `setApiKey`, () => {
 
     it( `stores trimmed key and returns it`, async () => {
         vi.spyOn( window, `showInputBox` ).mockResolvedValue( `  valid-key-here  ` );
-        vi.spyOn( provider, `validateApiKey` ).mockResolvedValue( true );
+        vi.mocked( createMistralClient ).mockReturnValue( { models: { list: vi.fn().mockResolvedValue( {} ) } } as any );
         const result = await provider.setApiKey();
         expect( result ).toBe( `valid-key-here` );
         expect( mockContext.secrets.store ).toHaveBeenCalledWith( `MISTRAL_API_KEY`, `valid-key-here` );
@@ -75,14 +86,14 @@ describe( `setApiKey`, () => {
 
     it( `returns undefined and shows error on invalid key`, async () => {
         vi.spyOn( window, `showInputBox` ).mockResolvedValue( `bad-key` );
-        vi.spyOn( provider, `validateApiKey` ).mockResolvedValue( false );
+        vi.mocked( createMistralClient ).mockReturnValue( { models: { list: vi.fn().mockRejectedValue( Object.assign( new Error( `Unauthorized` ), { statusCode: 401 } ) ) } } as any );
         expect( await provider.setApiKey() ).toBeUndefined();
         expect( window.showErrorMessage ).toHaveBeenCalled();
     } );
 
     it( `fires model info change event after storing key`, async () => {
         vi.spyOn( window, `showInputBox` ).mockResolvedValue( `valid-api-key-xyz` );
-        vi.spyOn( provider, `validateApiKey` ).mockResolvedValue( true );
+        vi.mocked( createMistralClient ).mockReturnValue( { models: { list: vi.fn().mockResolvedValue( {} ) } } as any );
         const listener = vi.fn();
         provider.onDidChangeLanguageModelChatInformation( listener );
         await provider.setApiKey();
@@ -91,7 +102,7 @@ describe( `setApiKey`, () => {
 
     it( `still returns key if secret storage throws`, async () => {
         vi.spyOn( window, `showInputBox` ).mockResolvedValue( `valid-api-key-xyz` );
-        vi.spyOn( provider, `validateApiKey` ).mockResolvedValue( true );
+        vi.mocked( createMistralClient ).mockReturnValue( { models: { list: vi.fn().mockResolvedValue( {} ) } } as any );
         vi.spyOn( mockContext.secrets, `store` ).mockRejectedValue( new Error( `storage error` ) );
         expect( await provider.setApiKey() ).toBe( `valid-api-key-xyz` );
     } );
@@ -118,7 +129,7 @@ describe( `callInitClient`, () => {
         vi.spyOn( window, `showInputBox` ).mockResolvedValue( `new-api-key-xyz` );
         vi.spyOn( mockContext.secrets, `store` ).mockResolvedValue( undefined );
         const provider = new MistralChatModelProvider( mockContext, undefined, false );
-        vi.spyOn( provider, `validateApiKey` ).mockResolvedValue( true );
+        vi.mocked( createMistralClient ).mockReturnValue( { models: { list: vi.fn().mockResolvedValue( {} ) } } as any );
         expect( await provider[ `callInitClient` ]( false ) ).toBe( true );
         expect( window.showInputBox ).toHaveBeenCalled();
     } );

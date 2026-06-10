@@ -8,5 +8,4 @@ export interface AuthDeps {
     setClient: ( client: Mistral | null ) => void;
     invalidateModelCache: () => void;
     fireModelInfoChange: () => void;
-    validateApiKey: ( apiKey: string ) => Promise<boolean>;
 }

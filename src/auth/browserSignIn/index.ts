@@ -8,4 +8,3 @@ export { BrowserSignInService } from './browserSignInService.js';
 export type { BrowserSignInStatus } from './browserSignInStatus.js';
 export type { CreateProcessPayload } from './createProcessPayload.js';
 export type { PollPayload } from './pollPayload.js';
-export type { PollStatus } from './pollStatus.js';

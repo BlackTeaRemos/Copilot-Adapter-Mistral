@@ -1,7 +1,7 @@
 {
   "name": "mistral-api-for-copilot-adapter",
   "displayName": "Mistral Models for Copilot Chat",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "icon": ".github/asset/icon.png",
   "description": "Mistral Models integration for Copilot Chat",
   "categories": [

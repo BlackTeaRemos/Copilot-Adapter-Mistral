@@ -1,6 +1,7 @@
 import { window } from 'vscode';
 import { AuthDeps } from './authDeps.js';
 import { storeAndActivate } from './storeAndActivate.js';
+import { createMistralClient } from '../client/index.js';
 
 /** Manual API-key entry fallback. */
 export async function enterApiKeyManually( deps: AuthDeps ): Promise<string | undefined> {
@@ -30,12 +31,8 @@ export async function enterApiKeyManually( deps: AuthDeps ): Promise<string | un
         return undefined;
     }
 
-    const isValid = await deps.validateApiKey( trimmedApiKey );
-    if ( !isValid ) {
-        log.warn( `[Mistral] Provided API key failed validation` );
-        await window.showErrorMessage( `Invalid Mistral API key. Please check your key and try again.` );
-        return undefined;
-    }
+    const testClient = createMistralClient( trimmedApiKey, deps.log );
+    await testClient.models.list();
 
     return storeAndActivate( deps, trimmedApiKey );
 }

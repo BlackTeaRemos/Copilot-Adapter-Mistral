@@ -39,7 +39,7 @@ import { assertChatStreamRequest, toModelOptions, getNumberOption, getBooleanOpt
 import { TokenizerCalibration } from './cacheCalibration.js';
 import { getMistralTokenizer } from './tokenizer/mistralTokenizer.js';
 import { computePromptCacheKey } from './promptCacheKey.js';
-import { validateApiKey, setApiKey, signInWithBrowser, initClient, type AuthDeps } from './auth/index.js';
+import { setApiKey, signInWithBrowser, initClient, type AuthDeps } from './auth/index.js';
 import { updateStatusBar } from './statusBar.js';
 
 function extractText( part: unknown ): string {
@@ -128,9 +128,6 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             fireModelInfoChange: () => {
                 this._onDidChangeLanguageModelChatInformation.fire( undefined );
             },
-            validateApiKey: apiKey => {
-                return this.validateApiKey( apiKey );
-            },
         };
     }
 
@@ -144,10 +141,6 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
     public signInWithBrowser(): Promise<string | undefined> {
         return signInWithBrowser( this.authDeps() );
-    }
-
-    public validateApiKey( apiKey: string ): Promise<boolean> {
-        return validateApiKey( apiKey, this.log );
     }
 
     public async fetchModels(): Promise<MistralModel[]> {
