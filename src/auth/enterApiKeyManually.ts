@@ -4,7 +4,7 @@ import { storeAndActivate } from './storeAndActivate.js';
 import { createMistralClient } from '../client/index.js';
 
 /** Manual API-key entry fallback. */
-export async function enterApiKeyManually( deps: AuthDeps ): Promise<string | undefined> {
+export async function enterApiKeyManually ( deps: AuthDeps ): Promise<string | undefined> {
     const { context, log } = deps;
     const existing = await context.secrets.get( `MISTRAL_API_KEY` );
     log.debug( `[Mistral] Prompting user for API key (existing present: ` + !!existing + `)` );
@@ -32,7 +32,13 @@ export async function enterApiKeyManually( deps: AuthDeps ): Promise<string | un
     }
 
     const testClient = createMistralClient( trimmedApiKey, deps.log );
-    await testClient.models.list();
+    try {
+        await testClient.models.list();
+    } catch ( error ) {
+        log.error( `[Mistral] API key validation failed: ${ error instanceof Error ? error.message : String( error ) }` );
+        await window.showErrorMessage( `Invalid Mistral API key: ${ error instanceof Error ? error.message : 'Unknown error' }` );
+        return undefined;
+    }
 
     return storeAndActivate( deps, trimmedApiKey );
 }
