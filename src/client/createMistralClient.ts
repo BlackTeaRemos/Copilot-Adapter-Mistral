@@ -2,7 +2,7 @@ import { Mistral } from '@mistralai/mistralai';
 import { workspace } from 'vscode';
 import type { MistralClientLogger } from './clientLogger.js';
 
-export function createMistralClient( apiKey: string, log: MistralClientLogger ): Mistral {
+export function createMistralClient ( apiKey: string, log: MistralClientLogger ): Mistral {
     const config = workspace.getConfiguration( `mistral` );
     const baseUrl = config.get<string>( `baseUrl` );
     const options: ConstructorParameters<typeof Mistral>[ 0 ] = {

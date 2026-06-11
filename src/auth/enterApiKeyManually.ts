@@ -36,7 +36,7 @@ export async function enterApiKeyManually ( deps: AuthDeps ): Promise<string | u
         await testClient.models.list();
     } catch ( error ) {
         log.error( `[Mistral] API key validation failed: ${ error instanceof Error ? error.message : String( error ) }` );
-        await window.showErrorMessage( `Invalid Mistral API key: ${ error instanceof Error ? error.message : 'Unknown error' }` );
+        await window.showErrorMessage( `Invalid Mistral API key: ${ error instanceof Error ? error.message : `Unknown error` }` );
         return undefined;
     }
 

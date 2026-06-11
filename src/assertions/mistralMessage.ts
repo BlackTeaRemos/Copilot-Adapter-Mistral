@@ -4,7 +4,7 @@ export type MistralMessageShape = {
     toolCalls?: unknown[];
 };
 
-export function toMistralMessageShape( val: unknown ): MistralMessageShape {
+export function toMistralMessageShape ( val: unknown ): MistralMessageShape {
     if ( typeof val !== `object` || val === null ) {
         return {};
     }

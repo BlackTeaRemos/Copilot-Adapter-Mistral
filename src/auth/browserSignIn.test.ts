@@ -12,7 +12,7 @@ const log = {
     error: vi.fn(),
 } as unknown as LogOutputChannel;
 
-function jsonResponse(
+function jsonResponse (
     body: unknown,
     init: { status?: number; ok?: boolean; headers?: Record<string, string>; } = {},
 ): Response {
@@ -24,7 +24,7 @@ function jsonResponse(
         headers: { get: ( name: string ) => {
             return headers[ name.toLowerCase() ] ?? null;
         } },
-        json: async() => {
+        json: async () => {
             return body;
         },
     } as unknown as Response;
@@ -32,7 +32,7 @@ function jsonResponse(
 
 type FetchMock = ReturnType<typeof vi.fn>;
 
-function makeService(
+function makeService (
     fetchMock: FetchMock,
     openBrowser = vi.fn().mockResolvedValue( true ),
     sleepDelays?: number[],
@@ -43,7 +43,7 @@ function makeService(
         openBrowser,
         browserBaseUrl: BROWSER,
         apiBaseUrl: API,
-        sleep: async( ms: number ) => {
+        sleep: async ( ms: number ) => {
             sleepDelays?.push( ms );
             return undefined;
         },
@@ -70,7 +70,7 @@ afterEach( () => {
 } );
 
 describe( `BrowserSignInService.authenticate`, () => {
-    it( `runs the full PKCE flow and returns the api key`, async() => {
+    it( `runs the full PKCE flow and returns the api key`, async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
             .mockResolvedValueOnce( jsonResponse( { status: `pending` } ) )
@@ -98,7 +98,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         expect( typeof exchangePayload.code_verifier ).toBe( `string` );
     } );
 
-    it( `rejects a sign-in url on a foreign host (no browser opened)`, async() => {
+    it( `rejects a sign-in url on a foreign host (no browser opened)`, async () => {
         const fetchMock = vi.fn().mockResolvedValueOnce(
             jsonResponse( { ...startBody, sign_in_url: `https://evil.example.com/vibe/sign-in/proc_1` } ),
         );
@@ -109,7 +109,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         expect( openBrowser ).not.toHaveBeenCalled();
     } );
 
-    it( `surfaces a denied sign-in`, async() => {
+    it( `surfaces a denied sign-in`, async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
             .mockResolvedValueOnce( jsonResponse( { status: `denied` } ) );
@@ -117,7 +117,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         await expect( service.authenticate() ).rejects.toMatchObject( { code: `denied` } );
     } );
 
-    it( `treats HTTP 410 on poll as expired`, async() => {
+    it( `treats HTTP 410 on poll as expired`, async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
             .mockResolvedValueOnce( jsonResponse( {}, { status: 410 } ) );
@@ -125,7 +125,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         await expect( service.authenticate() ).rejects.toMatchObject( { code: `expired` } );
     } );
 
-    it( `gives up after 3 consecutive poll failures`, async() => {
+    it( `gives up after 3 consecutive poll failures`, async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
             .mockRejectedValue( new Error( `network down` ) );
@@ -135,7 +135,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         expect( fetchMock ).toHaveBeenCalledTimes( 4 );
     } );
 
-    it( `recovers from a transient poll failure then completes`, async() => {
+    it( `recovers from a transient poll failure then completes`, async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
             .mockRejectedValueOnce( new Error( `blip` ) )
@@ -145,14 +145,14 @@ describe( `BrowserSignInService.authenticate`, () => {
         await expect( service.authenticate() ).resolves.toBe( `sk-ok` );
     } );
 
-    it( `times out once expires_at passes`, async() => {
+    it( `times out once expires_at passes`, async () => {
         vi.stubGlobal( `fetch`, vi.fn().mockResolvedValueOnce( jsonResponse( startBody ) ) );
         const service = new BrowserSignInService( {
             log,
             openBrowser: vi.fn().mockResolvedValue( true ),
             browserBaseUrl: BROWSER,
             apiBaseUrl: API,
-            sleep: async() => {
+            sleep: async () => {
                 return undefined;
             },
             now: () => {
@@ -162,13 +162,13 @@ describe( `BrowserSignInService.authenticate`, () => {
         await expect( service.authenticate() ).rejects.toMatchObject( { code: `timed_out` } );
     } );
 
-    it( `fails when the browser cannot be opened`, async() => {
+    it( `fails when the browser cannot be opened`, async () => {
         const fetchMock = vi.fn().mockResolvedValueOnce( jsonResponse( startBody ) );
         const service = makeService( fetchMock, vi.fn().mockResolvedValue( false ) );
         await expect( service.authenticate() ).rejects.toMatchObject( { code: `open_browser_failed` } );
     } );
 
-    it( `errors when exchange returns no api key`, async() => {
+    it( `errors when exchange returns no api key`, async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
             .mockResolvedValueOnce( jsonResponse( { status: `completed`, exchange_token: `xtok` } ) )
@@ -177,7 +177,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         await expect( service.authenticate() ).rejects.toMatchObject( { code: `missing_api_key` } );
     } );
 
-    it( `aborts when the signal is already cancelled`, async() => {
+    it( `aborts when the signal is already cancelled`, async () => {
         const controller = new AbortController();
         controller.abort();
         const fetchMock = vi.fn().mockResolvedValueOnce( jsonResponse( startBody ) );
@@ -188,7 +188,7 @@ describe( `BrowserSignInService.authenticate`, () => {
             signal: controller.signal,
             browserBaseUrl: BROWSER,
             apiBaseUrl: API,
-            sleep: async() => {
+            sleep: async () => {
                 return undefined;
             },
             now: () => {
@@ -198,7 +198,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         await expect( service.authenticate() ).rejects.toBeInstanceOf( BrowserSignInError );
     } );
 
-    it( `polls immediately before any sleep (fast finish)`, async() => {
+    it( `polls immediately before any sleep (fast finish)`, async () => {
         const delays: number[] = [];
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
@@ -210,7 +210,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         expect( delays ).toHaveLength( 0 );
     } );
 
-    it( `honours Retry-After (seconds) on a pending poll`, async() => {
+    it( `honours Retry-After (seconds) on a pending poll`, async () => {
         const delays: number[] = [];
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
@@ -222,7 +222,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         expect( delays[ 0 ] ).toBe( 7000 );
     } );
 
-    it( `treats HTTP 429 as pending and backs off per Retry-After`, async() => {
+    it( `treats HTTP 429 as pending and backs off per Retry-After`, async () => {
         const delays: number[] = [];
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )
@@ -234,7 +234,7 @@ describe( `BrowserSignInService.authenticate`, () => {
         expect( delays[ 0 ] ).toBe( 2000 );
     } );
 
-    it( `applies exponential backoff between transient poll failures`, async() => {
+    it( `applies exponential backoff between transient poll failures`, async () => {
         const delays: number[] = [];
         const fetchMock = vi.fn()
             .mockResolvedValueOnce( jsonResponse( startBody ) )

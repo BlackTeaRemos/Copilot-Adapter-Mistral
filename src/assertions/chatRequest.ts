@@ -1,6 +1,6 @@
 import type { ChatCompletionStreamRequest } from '@mistralai/mistralai/models/components';
 
-export function assertChatStreamRequest( req: unknown ): asserts req is ChatCompletionStreamRequest {
+export function assertChatStreamRequest ( req: unknown ): asserts req is ChatCompletionStreamRequest {
     if ( typeof req !== `object` || req === null ) {
         throw new TypeError( `[Mistral] request must be an object` );
     }

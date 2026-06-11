@@ -9,7 +9,7 @@ import type { MistralMessage, MistralToolCall, ToolCallIdMap } from '../types.js
 import { toMistralRole } from './toMistralRole.js';
 import { getOrCreateMistralToolCallId } from './toolCallIdMap.js';
 
-export function toMistralMessages(
+export function toMistralMessages (
     messages: readonly LanguageModelChatMessage[],
     map: ToolCallIdMap,
 ): MistralMessage[] {
@@ -21,7 +21,7 @@ export function toMistralMessages(
     return out;
 }
 
-function buildMistralMessage(
+function buildMistralMessage (
     msg: LanguageModelChatMessage,
     toolNameByCallId: Map<string, string>,
     map: ToolCallIdMap,
@@ -59,7 +59,7 @@ function buildMistralMessage(
     }
 
     // Only emit the wrapper when there is actual content or tool calls.
-    // Tool results live in their own `tool` role messages — must NOT be preceded by an empty user turn.
+    // Tool results live in their own `tool` role messages - must NOT be preceded by an empty user turn.
     const hasWrapper = messageContent !== undefined || toolCalls.length > 0;
     if ( hasWrapper ) {
         if ( role === `assistant` ) {
@@ -87,7 +87,7 @@ function buildMistralMessage(
     }
 }
 
-function processMessageParts(
+function processMessageParts (
     msg: LanguageModelChatMessage,
     textParts: string[],
     imageParts: Array<{ mimeType: string; data: Uint8Array; }>,

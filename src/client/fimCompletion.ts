@@ -19,7 +19,7 @@ export type FimParams = {
     promptCacheKey?: string;
 };
 
-export async function fimComplete(
+export async function fimComplete (
     client: Mistral,
     params: FimParams,
     signal: AbortSignal,

@@ -10,9 +10,9 @@ import { Tiktoken } from 'js-tiktoken';
  * vocabulary. The vocab ships as two assets (generated from Mistral's
  * `tekken.json`, Apache-2.0):
  *
- *   - `tekken.bpe`       — newline-joined `! <rank> <base64-bytes>` lines,
+ *   - `tekken.bpe`       - newline-joined `! <rank> <base64-bytes>` lines,
  *                          the format `Tiktoken`'s `bpe_ranks` expects.
- *   - `tekken.meta.json` — `{ pat_str, version }`, the pre-tokenization regex.
+ *   - `tekken.meta.json` - `{ pat_str, version }`, the pre-tokenization regex.
  *
  * Token *counts* need only the merge ranks and the split pattern, so special
  * tokens are intentionally omitted (chat-template control tokens never reach

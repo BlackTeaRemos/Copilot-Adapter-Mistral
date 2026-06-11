@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TokenizerCalibration } from './cacheCalibration.js';
 
-function makeCtx( stored: Record<string, unknown> = {} ) {
+function makeCtx ( stored: Record<string, unknown> = {} ) {
     const store: Record<string, unknown> = { 'mistral.tokenizerCalibration.v1': stored };
     return {
         globalState: {

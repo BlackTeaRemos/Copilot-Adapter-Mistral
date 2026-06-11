@@ -1,6 +1,6 @@
 import { LanguageModelChatMessageRole } from 'vscode';
 
-export function toMistralRole( role: LanguageModelChatMessageRole ): `user` | `assistant` | `system` {
+export function toMistralRole ( role: LanguageModelChatMessageRole ): `user` | `assistant` | `system` {
     switch ( role ) {
         case LanguageModelChatMessageRole.User:
             return `user`;

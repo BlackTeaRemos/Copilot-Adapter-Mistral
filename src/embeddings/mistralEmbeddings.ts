@@ -1,19 +1,19 @@
 import type { Mistral } from '@mistralai/mistralai';
 
 /** Mistral's embedding models. Only these may be used for embeddings. */
-export const EMBEDDING_MODELS = [`codestral-embed`, `mistral-embed`] as const;
+export const EMBEDDING_MODELS = [ `codestral-embed`, `mistral-embed` ] as const;
 export type EmbeddingModel = typeof EMBEDDING_MODELS[ number ];
 
 /** Default embedding model. codestral-embed is tuned for code retrieval. */
 export const DEFAULT_EMBED_MODEL: EmbeddingModel = `codestral-embed`;
 
 /** True when `id` is a Mistral embedding model (vs a chat/FIM model). */
-export function isEmbeddingModel( id: string ): boolean {
+export function isEmbeddingModel ( id: string ): boolean {
     return /embed/i.test( id );
 }
 
 /** Returns `model` if it is an embedding model, else the default embed model. */
-export function coerceEmbeddingModel( model: string | undefined ): EmbeddingModel {
+export function coerceEmbeddingModel ( model: string | undefined ): EmbeddingModel {
     return model && isEmbeddingModel( model ) ? model as EmbeddingModel : DEFAULT_EMBED_MODEL;
 }
 
@@ -44,7 +44,7 @@ export interface CreateEmbeddingsOptions {
  * @returns One vector per input, index-aligned with `inputs`. A cancelled run
  *          returns the vectors collected so far (trailing slots may be empty).
  */
-export async function createEmbeddings(
+export async function createEmbeddings (
     client: Mistral,
     model: string,
     inputs: string[],
@@ -76,7 +76,7 @@ export async function createEmbeddings(
 }
 
 /** Cosine similarity of two equal-length vectors. Returns 0 for a zero vector. */
-export function cosineSimilarity( a: readonly number[], b: readonly number[] ): number {
+export function cosineSimilarity ( a: readonly number[], b: readonly number[] ): number {
     const n = Math.min( a.length, b.length );
     let dot = 0, na = 0, nb = 0;
     for ( let i = 0; i < n; i++ ) {
@@ -94,7 +94,7 @@ export function cosineSimilarity( a: readonly number[], b: readonly number[] ): 
  * Ranks `items` by cosine similarity to `query`, descending, keeping the top
  * `topK`. Items below `minScore` (if given) are dropped.
  */
-export function rankBySimilarity<T>(
+export function rankBySimilarity<T> (
     query: readonly number[],
     items: ReadonlyArray<{ item: T; vector: readonly number[]; }>,
     topK: number,

@@ -2,7 +2,7 @@ import type { LanguageModelChatInformation } from 'vscode';
 import type { MistralModel } from '../types.js';
 import { getModelPricing, formatPricingDetail } from './modelPricing.js';
 
-export function formatModelName( id: string ): string {
+export function formatModelName ( id: string ): string {
     return id
         .split( `-` )
         .filter( word => {
@@ -14,7 +14,7 @@ export function formatModelName( id: string ): string {
         .join( ` ` );
 }
 
-export function getChatModelInfo( model: MistralModel ): LanguageModelChatInformation {
+export function getChatModelInfo ( model: MistralModel ): LanguageModelChatInformation {
     const p = getModelPricing( model.id );
     // 1 AIC = $0.01 → $X per 1M tokens = X * 100 AICs per 1M tokens
     const usdToAic = ( usd: number ) => {

@@ -10,14 +10,14 @@ export type ModelPricing = {
 
 const CACHE_RATIO = 0.10;
 
-export function getModelPricing( modelId: string ): ModelPricing | undefined {
+export function getModelPricing ( modelId: string ): ModelPricing | undefined {
     const id = modelId.toLowerCase();
     return pricing.models.find( entry => {
         return id === entry.match || id.startsWith( entry.match );
     } ) as ModelPricing | undefined;
 }
 
-export function formatPricingDetail( p: ModelPricing ): string {
+export function formatPricingDetail ( p: ModelPricing ): string {
     const fmt = ( n: number ) => {
         return n < 0.10 ? `$${ n.toFixed( 3 ) }` : `$${ n.toFixed( 2 ) }`;
     };

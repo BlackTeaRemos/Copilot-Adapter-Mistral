@@ -5,14 +5,14 @@ export type ContentDeltaState = {
     thinkBuffer: string;
 };
 
-export function createContentDeltaState(): ContentDeltaState {
+export function createContentDeltaState (): ContentDeltaState {
     return { thinkDepth: 0, thinkBuffer: `` };
 }
 
 const THINK_OPEN = `<think>`;
 const THINK_CLOSE = `</think>`;
 
-function reportText(
+function reportText (
     text: string,
     progress: Progress<LanguageModelResponsePart>,
     log: { debug: ( msg: string ) => void; },
@@ -23,7 +23,7 @@ function reportText(
     }
 }
 
-export function processContentDelta(
+export function processContentDelta (
     raw: string,
     state: ContentDeltaState,
     progress: Progress<LanguageModelResponsePart>,
@@ -46,20 +46,20 @@ export function processContentDelta(
 
         if ( state.thinkDepth > 0 ) {
             state.thinkBuffer += raw.slice( i, tagIdx );
-            log.debug( `[Mistral] think block closed — buffered ${ state.thinkBuffer.length } chars, depth ${ state.thinkDepth } → ${ state.thinkDepth - 1 }` );
+            log.debug( `[Mistral] think block closed - buffered ${ state.thinkBuffer.length } chars, depth ${ state.thinkDepth } → ${ state.thinkDepth - 1 }` );
             state.thinkBuffer = ``;
             state.thinkDepth--;
             i = tagIdx + THINK_CLOSE.length;
         } else {
             reportText( raw.slice( i, tagIdx ), progress, log );
-            log.debug( `[Mistral] think block opened — depth 0 → 1` );
+            log.debug( `[Mistral] think block opened - depth 0 → 1` );
             state.thinkDepth++;
             i = tagIdx + THINK_OPEN.length;
         }
     }
 }
 
-export function flushContentDeltaState(
+export function flushContentDeltaState (
     state: ContentDeltaState,
     log: { debug: ( msg: string ) => void; },
 ): void {

@@ -3,14 +3,14 @@ import type { ChatCompletionStreamRequest, CompletionEvent } from '@mistralai/mi
 import type { MistralClientLogger } from './clientLogger.js';
 import { toMistralMessageShape } from '../assertions/index.js';
 
-export async function streamChatCompletion(
+export async function streamChatCompletion (
     client: Mistral,
     request: ChatCompletionStreamRequest,
     signal: AbortSignal,
     log: MistralClientLogger,
 ): Promise<AsyncIterable<CompletionEvent>> {
     log.debug(
-        `[Mistral] streamChatCompletion — model=${ request.model }` +
+        `[Mistral] streamChatCompletion - model=${ request.model }` +
         ` messages=${ request.messages?.length ?? 0 }` +
         ` maxTokens=${ request.maxTokens ?? `default` }` +
         ` temperature=${ request.temperature ?? `default` }` +

@@ -7,7 +7,7 @@ import { createToolCallIdMap } from '../conversion/index.js';
 
 const log = { trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
-function ctx(): StreamContext {
+function ctx (): StreamContext {
     return {
         contentState: createContentDeltaState(),
         toolCallState: createToolCallState(),
@@ -16,7 +16,7 @@ function ctx(): StreamContext {
     };
 }
 
-function event( data: any ) {
+function event ( data: any ) {
     return { data } as any;
 }
 
@@ -24,7 +24,7 @@ describe( `processStreamEvent`, () => {
     it( `forwards content deltas to progress`, () => {
         const c = ctx();
         const progress = { report: vi.fn() };
-        processStreamEvent( event( { choices: [{ delta: { content: `hello` } }] } ), c, progress as any, log );
+        processStreamEvent( event( { choices: [ { delta: { content: `hello` } } ] } ), c, progress as any, log );
         expect( progress.report ).toHaveBeenCalledTimes( 1 );
         expect( ( progress.report.mock.calls[ 0 ][ 0 ] as LanguageModelTextPart ).value ).toBe( `hello` );
     } );
@@ -33,7 +33,7 @@ describe( `processStreamEvent`, () => {
         const c = ctx();
         const progress = { report: vi.fn() };
         processStreamEvent(
-            event( { choices: [{ delta: { content: [{ type: `text`, text: `a` }, { type: `text`, text: `b` }] } }] } ),
+            event( { choices: [ { delta: { content: [ { type: `text`, text: `a` }, { type: `text`, text: `b` } ] } } ] } ),
             c, progress as any, log,
         );
         expect( ( progress.report.mock.calls[ 0 ][ 0 ] as LanguageModelTextPart ).value ).toBe( `ab` );
@@ -75,7 +75,7 @@ describe( `processStreamEvent`, () => {
 
     it( `flags truncation on finishReason length`, () => {
         const c = ctx();
-        processStreamEvent( event( { choices: [{ delta: {}, finishReason: `length` }] } ), c, { report: vi.fn() } as any, log );
+        processStreamEvent( event( { choices: [ { delta: {}, finishReason: `length` } ] } ), c, { report: vi.fn() } as any, log );
         expect( c.truncated ).toBe( true );
     } );
 

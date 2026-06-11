@@ -1,6 +1,6 @@
 import { BrowserSignInError } from './browserSignInError.js';
 
-export async function parseJsonObject( response: Response ): Promise<Record<string, unknown>> {
+export async function parseJsonObject ( response: Response ): Promise<Record<string, unknown>> {
     let payload: unknown;
     try {
         payload = await response.json();

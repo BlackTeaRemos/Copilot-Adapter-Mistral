@@ -8,7 +8,7 @@ import { signInWithBrowser } from './signInWithBrowser.js';
  * primary path and manual API-key entry as the fallback, then stores and
  * activates whichever succeeds.
  */
-export async function setApiKey( deps: AuthDeps ): Promise<string | undefined> {
+export async function setApiKey ( deps: AuthDeps ): Promise<string | undefined> {
     const { log } = deps;
     const choice = await window.showQuickPick(
         [

@@ -45,7 +45,7 @@ const DEFAULT_CHUNK: Required<ChunkOptions> = { maxLines: 40, maxChars: 1500 };
  *
  * @returns Chunks with 1-based inclusive line ranges.
  */
-export function chunkDocument( text: string, opts: ChunkOptions = {} ): CodeChunk[] {
+export function chunkDocument ( text: string, opts: ChunkOptions = {} ): CodeChunk[] {
     const maxLines = opts.maxLines ?? DEFAULT_CHUNK.maxLines;
     const maxChars = opts.maxChars ?? DEFAULT_CHUNK.maxChars;
     const lines = text.split( /\r?\n/ );
@@ -80,7 +80,7 @@ export function chunkDocument( text: string, opts: ChunkOptions = {} ): CodeChun
     return chunks;
 }
 
-export function hashContent( text: string ): string {
+export function hashContent ( text: string ): string {
     return createHash( `sha1` ).update( text ).digest( `hex` );
 }
 
@@ -99,7 +99,7 @@ export interface ReindexPlan {
  * @param current Files found now, with their content hashes.
  * @param cached  Hashes from the persisted index.
  */
-export function planReindex(
+export function planReindex (
     current: ReadonlyArray<{ file: string; hash: string; }>,
     cached: Readonly<Record<string, { hash: string; }>>,
 ): ReindexPlan {
@@ -151,18 +151,18 @@ export class CodebaseEmbeddingIndex {
     /** Fires whenever the index state or contents change (for status UI). */
     readonly onChange = this.onDidChange.event;
 
-    constructor(
+    constructor (
         private readonly context: vscode.ExtensionContext,
         private readonly getClient: () => Promise<Mistral | null>,
         private readonly log: EmbeddingsLogger,
         private readonly getModel: () => EmbeddingModel,
     ) { }
 
-    getState(): IndexState {
+    getState (): IndexState {
         return this.state;
     }
 
-    get chunkCount(): number {
+    get chunkCount (): number {
         let n = 0;
         for ( const f of Object.values( this.files ) ) {
             n += f.chunks.length;
@@ -170,22 +170,22 @@ export class CodebaseEmbeddingIndex {
         return n;
     }
 
-    get fileCount(): number {
+    get fileCount (): number {
         return Object.keys( this.files ).length;
     }
 
-    private setState( state: IndexState ): void {
+    private setState ( state: IndexState ): void {
         this.state = state;
         this.onDidChange.fire();
     }
 
-    private get storageUri(): vscode.Uri | undefined {
+    private get storageUri (): vscode.Uri | undefined {
         const base = this.context.storageUri;
         return base ? vscode.Uri.joinPath( base, `embeddingIndex.json` ) : undefined;
     }
 
     /** Loads a persisted index from workspace storage, if present. */
-    async load(): Promise<void> {
+    async load (): Promise<void> {
         if ( this.loaded ) {
             return;
         }
@@ -203,12 +203,12 @@ export class CodebaseEmbeddingIndex {
                 this.log.info( `[Mistral] Loaded embedding index: ${ this.fileCount } files / ${ this.chunkCount } chunks (model ${ this.indexedModel }).` );
             }
         } catch {
-            // No persisted index yet — first build will create one.
+            // No persisted index yet - first build will create one.
         }
         this.setState( this.chunkCount > 0 ? `ready` : `empty` );
     }
 
-    private async persist( model: EmbeddingModel ): Promise<void> {
+    private async persist ( model: EmbeddingModel ): Promise<void> {
         const uri = this.storageUri;
         if ( !uri || !this.context.storageUri ) {
             return;
@@ -217,7 +217,7 @@ export class CodebaseEmbeddingIndex {
             await vscode.workspace.fs.createDirectory( this.context.storageUri );
             const payload: PersistedIndex = { model, files: this.files };
             await vscode.workspace.fs.writeFile( uri, new TextEncoder().encode( JSON.stringify( payload ) ) );
-        } catch( err ) {
+        } catch ( err ) {
             this.log.warn( `[Mistral] Failed to persist embedding index: ${ String( err ) }` );
         }
     }
@@ -226,7 +226,7 @@ export class CodebaseEmbeddingIndex {
      * (Re)builds the index over the current workspace, re-embedding only files
      * whose contents changed since the last build.
      */
-    async build(
+    async build (
         progress?: vscode.Progress<{ message?: string; }>,
         token?: vscode.CancellationToken,
     ): Promise<BuildResult> {
@@ -262,7 +262,7 @@ export class CodebaseEmbeddingIndex {
                     const text = new TextDecoder().decode( await vscode.workspace.fs.readFile( uri ) );
                     current.push( { file: vscode.workspace.asRelativePath( uri, false ), hash: hashContent( text ), text } );
                 } catch {
-                    // Unreadable file — skip.
+                    // Unreadable file - skip.
                 }
             }
 
@@ -278,7 +278,7 @@ export class CodebaseEmbeddingIndex {
 
             // Chunk the files that need embedding.
             const byFile = new Map( current.map( c => {
-                return [c.file, c];
+                return [ c.file, c ];
             } ) );
             const pending: CodeChunk[] = [];
             for ( const file of plan.embed ) {
@@ -319,8 +319,8 @@ export class CodebaseEmbeddingIndex {
                 embeddedChunks = pending.length;
             }
 
-            // Write back every (re)embedded file — including files that now
-            // chunk to nothing — so their stored hash and vectors stay current.
+            // Write back every (re)embedded file - including files that now
+            // chunk to nothing - so their stored hash and vectors stay current.
             for ( const file of plan.embed ) {
                 const hash = byFile.get( file )!.hash;
                 this.files[ file ] = { hash, chunks: grouped.get( file ) ?? [] };
@@ -331,17 +331,17 @@ export class CodebaseEmbeddingIndex {
             this.setState( this.chunkCount > 0 ? `ready` : `empty` );
             this.log.info( `[Mistral] Index built: ${ this.chunkCount } chunks (${ embeddedChunks } embedded, ${ reusedChunks } reused).` );
             return this.result( embeddedChunks, reusedChunks );
-        } catch( err ) {
+        } catch ( err ) {
             this.setState( this.chunkCount > 0 ? `ready` : `empty` );
             throw err;
         }
     }
 
-    private result( embedded: number, reused: number ): BuildResult {
+    private result ( embedded: number, reused: number ): BuildResult {
         return { total: this.chunkCount, embedded, reused };
     }
 
-    private allEntries(): IndexEntry[] {
+    private allEntries (): IndexEntry[] {
         const out: IndexEntry[] = [];
         for ( const f of Object.values( this.files ) ) {
             out.push( ...f.chunks );
@@ -350,7 +350,7 @@ export class CodebaseEmbeddingIndex {
     }
 
     /** Embeds `query` and returns the top matching chunks. */
-    async search(
+    async search (
         query: string,
         topK = 10,
         token?: vscode.CancellationToken,
@@ -365,7 +365,7 @@ export class CodebaseEmbeddingIndex {
             throw new Error( `Mistral API key not set. Run "Mistral: Manage API Key" first.` );
         }
         const model = this.indexedModel ?? this.getModel();
-        const [queryVec] = await createEmbeddings( client, model, [query], {
+        const [ queryVec ] = await createEmbeddings( client, model, [ query ], {
             shouldCancel: () => {
                 return token?.isCancellationRequested ?? false;
             },
@@ -376,16 +376,16 @@ export class CodebaseEmbeddingIndex {
         return rankBySimilarity(
             queryVec,
             entries.map( entry => {
-                return  { item: entry, vector: entry.vector };
+                return { item: entry, vector: entry.vector };
             } ),
             topK,
         ).map( r => {
-            return  { entry: r.item, score: r.score };
+            return { entry: r.item, score: r.score };
         } );
     }
 
     /** Clears the in-memory and persisted index. */
-    async clear(): Promise<void> {
+    async clear (): Promise<void> {
         this.files = {};
         this.indexedModel = undefined;
         const uri = this.storageUri;
@@ -397,7 +397,7 @@ export class CodebaseEmbeddingIndex {
         this.setState( `empty` );
     }
 
-    dispose(): void {
+    dispose (): void {
         this.onDidChange.dispose();
     }
 }

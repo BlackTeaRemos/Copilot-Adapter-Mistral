@@ -20,7 +20,7 @@ export type StreamLogger = {
     warn: ( msg: string ) => void;
 };
 
-export function processStreamEvent(
+export function processStreamEvent (
     event: CompletionEvent,
     ctx: StreamContext,
     progress: Progress<LanguageModelResponsePart>,
@@ -35,7 +35,7 @@ export function processStreamEvent(
 
     if ( chunk?.usage ) {
         // Mistral sends absolute totals for the current request (not deltas).
-        // promptTokens already includes all prior context — take the max to avoid double-counting.
+        // promptTokens already includes all prior context - take the max to avoid double-counting.
         // completionTokens is cumulative across the conversation.
         const prompt = chunk.usage.promptTokens ?? 0;
         const completion = chunk.usage.completionTokens ?? 0;
@@ -44,7 +44,7 @@ export function processStreamEvent(
         ctx.usage.lastPrompt = prompt;
         ctx.usage.output += completion;
         // Streaming chunk.usage is the plain UsageInfo type, which carries cache fields only via its
-        // catchall (raw snake_case). Mistral has used several shapes across versions — try each.
+        // catchall (raw snake_case). Mistral has used several shapes across versions - try each.
         const rawUsage = chunk.usage as Record<string, unknown>;
         const detail = ( rawUsage[ `prompt_tokens_details` ] ?? rawUsage[ `prompt_token_details` ] ) as
             { cached_tokens?: number; } | undefined;
@@ -53,7 +53,7 @@ export function processStreamEvent(
             ctx.usage.cached = Math.max( ctx.usage.cached, cached );
         }
         log.trace(
-            `[Mistral] token usage — prompt: ${ prompt }, completion: ${ completion }, cached: ${ cached }` +
+            `[Mistral] token usage - prompt: ${ prompt }, completion: ${ completion }, cached: ${ cached }` +
             ( total !== undefined ? `, total: ${ total }` : `` ),
         );
     }
@@ -69,7 +69,7 @@ export function processStreamEvent(
         log.trace( `[Mistral] stream chunk finishReason=${ finishReason }` );
         if ( finishReason === `length` ) {
             ctx.truncated = true;
-            log.warn( `[Mistral] response truncated — hit maxTokens limit` );
+            log.warn( `[Mistral] response truncated - hit maxTokens limit` );
         }
     }
 

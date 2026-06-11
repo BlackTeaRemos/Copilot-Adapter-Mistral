@@ -2,7 +2,7 @@ import { MarkdownString, StatusBarItem, ThemeColor } from 'vscode';
 import type { UsageStats } from './types.js';
 import type { TokenizerCalibration } from './cacheCalibration.js';
 
-export function updateStatusBar(
+export function updateStatusBar (
     statusBarItem: StatusBarItem,
     usage: UsageStats,
     modelName: string,
@@ -12,7 +12,7 @@ export function updateStatusBar(
 ): void {
     if ( !authenticated ) {
         const md = new MarkdownString(
-            `**Mistral** — not signed in\n\n` +
+            `**Mistral** - not signed in\n\n` +
             `[$(sign-in) Sign in with browser](command:mistral-adapter.signIn) &nbsp;·&nbsp; ` +
             `[$(key) Enter API key](command:mistral-adapter.manageApiKey)`,
         );
@@ -47,12 +47,12 @@ export function updateStatusBar(
     statusBarItem.backgroundColor = undefined;
     statusBarItem.text = `$(hubot)${ modelTag } ${ fmt( input ) }↑ ${ fmt( output ) }↓${ cacheTag }${ scaleTag }`;
 
-    const cachedLine = cached > 0 ? `- cached: ${cached.toLocaleString()}\n` : ``;
+    const cachedLine = cached > 0 ? `- cached: ${ cached.toLocaleString() }\n` : ``;
     const tokLine = samples > 0
         ? `- tokenizer scale: ${ scale !== undefined ? scale.toFixed( 3 ) : `calibrating` } (${ ( conf * 100 ).toFixed( 0 ) }% conf, ${ samples } samples)\n`
         : ``;
     const tip = new MarkdownString(
-        `**Mistral** — last turn (${ modelName })\n\n` +
+        `**Mistral** - last turn (${ modelName })\n\n` +
         `- prompt: ${ input.toLocaleString() }\n` +
         cachedLine +
         `- completion: ${ output.toLocaleString() }\n` +

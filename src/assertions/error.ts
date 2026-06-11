@@ -4,11 +4,11 @@ export type ErrorLike = {
     message?: string;
 };
 
-export function isErrorLike( val: unknown ): val is ErrorLike {
+export function isErrorLike ( val: unknown ): val is ErrorLike {
     return typeof val === `object` && val !== null;
 }
 
-export function getStatusCode( error: unknown ): number | undefined {
+export function getStatusCode ( error: unknown ): number | undefined {
     if ( !isErrorLike( error ) ) {
         return undefined;
     }
@@ -16,7 +16,7 @@ export function getStatusCode( error: unknown ): number | undefined {
     return typeof code === `number` ? code : undefined;
 }
 
-export function getErrorName( error: unknown ): string | undefined {
+export function getErrorName ( error: unknown ): string | undefined {
     if ( !isErrorLike( error ) ) {
         return undefined;
     }
@@ -24,7 +24,7 @@ export function getErrorName( error: unknown ): string | undefined {
     return typeof name === `string` ? name : undefined;
 }
 
-export function getErrorMessage( error: unknown ): string | undefined {
+export function getErrorMessage ( error: unknown ): string | undefined {
     if ( !isErrorLike( error ) ) {
         return undefined;
     }

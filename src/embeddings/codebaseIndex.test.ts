@@ -16,12 +16,12 @@ describe( `chunkDocument`, () => {
         } ).join( `\n` );
         const chunks = chunkDocument( text, { maxLines: 4, maxChars: 10_000 } );
         expect( chunks.map( c => {
-            return [c.startLine, c.endLine];
-        } ) ).toEqual( [[1, 4], [5, 8], [9, 10]] );
+            return [ c.startLine, c.endLine ];
+        } ) ).toEqual( [ [ 1, 4 ], [ 5, 8 ], [ 9, 10 ] ] );
     } );
 
     it( `splits when the char budget is exceeded`, () => {
-        const text = [`a`.repeat( 30 ), `b`.repeat( 30 ), `c`.repeat( 30 )].join( `\n` );
+        const text = [ `a`.repeat( 30 ), `b`.repeat( 30 ), `c`.repeat( 30 ) ].join( `\n` );
         const chunks = chunkDocument( text, { maxLines: 100, maxChars: 50 } );
         expect( chunks.length ).toBeGreaterThan( 1 );
     } );
@@ -69,23 +69,23 @@ describe( `planReindex`, () => {
             'd.ts': { hash: `h4` }, // deleted
         };
         const plan = planReindex( current, cached );
-        expect( plan.reuse ).toEqual( [`a.ts`] );
-        expect( plan.embed.sort() ).toEqual( [`b.ts`, `c.ts`] );
-        expect( plan.remove ).toEqual( [`d.ts`] );
+        expect( plan.reuse ).toEqual( [ `a.ts` ] );
+        expect( plan.embed.sort() ).toEqual( [ `b.ts`, `c.ts` ] );
+        expect( plan.remove ).toEqual( [ `d.ts` ] );
     } );
 
     it( `embeds everything when cache is empty`, () => {
-        const plan = planReindex( [{ file: `x`, hash: `h` }], {} );
-        expect( plan.embed ).toEqual( [`x`] );
+        const plan = planReindex( [ { file: `x`, hash: `h` } ], {} );
+        expect( plan.embed ).toEqual( [ `x` ] );
         expect( plan.reuse ).toEqual( [] );
         expect( plan.remove ).toEqual( [] );
     } );
 
     it( `reuses all when nothing changed (no wasted embedding)`, () => {
-        const files = [{ file: `a`, hash: `1` }, { file: `b`, hash: `2` }];
+        const files = [ { file: `a`, hash: `1` }, { file: `b`, hash: `2` } ];
         const cached = { a: { hash: `1` }, b: { hash: `2` } };
         const plan = planReindex( files, cached );
         expect( plan.embed ).toEqual( [] );
-        expect( plan.reuse.sort() ).toEqual( [`a`, `b`] );
+        expect( plan.reuse.sort() ).toEqual( [ `a`, `b` ] );
     } );
 } );

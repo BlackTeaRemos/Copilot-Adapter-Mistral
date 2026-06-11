@@ -2,13 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { LanguageModelTextPart } from 'vscode';
 import { createContentDeltaState, processContentDelta, flushContentDeltaState } from './processContentDelta.js';
 
-function makeCtx() {
+function makeCtx () {
     const reported: string[] = [];
-    const progress = { report: vi.fn( ( part: any ) => {
-        if ( part?.value !== undefined ) {
-            reported.push( part.value );
-        }
-    } ) };
+    const progress = {
+        report: vi.fn( ( part: any ) => {
+            if ( part?.value !== undefined ) {
+                reported.push( part.value );
+            }
+        } ),
+    };
     const log = { debug: vi.fn() };
     const state = createContentDeltaState();
     return { state, progress, log, reported };
@@ -46,7 +48,7 @@ describe( `processContentDelta`, () => {
         expect( reported.join( `` ) ).toBe( `BeforeAfter` );
     } );
 
-    it( `multiple chunks — no think tags — all text emitted`, () => {
+    it( `multiple chunks - no think tags - all text emitted`, () => {
         const { state, progress, log, reported } = makeCtx();
         processContentDelta( `Hello `, state, progress, log );
         processContentDelta( `World`, state, progress, log );

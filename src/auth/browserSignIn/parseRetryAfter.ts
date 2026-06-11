@@ -3,7 +3,7 @@
  * Returns undefined when absent or unparseable so callers fall back to the
  * default poll interval.
  */
-export function parseRetryAfter( response: Response, now: () => number ): number | undefined {
+export function parseRetryAfter ( response: Response, now: () => number ): number | undefined {
     const header = response.headers?.get?.( `retry-after` );
     if ( !header ) {
         return undefined;

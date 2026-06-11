@@ -8,11 +8,11 @@ export type ToolCallState = {
     emitted: Set<string>;
 };
 
-export function createToolCallState(): ToolCallState {
+export function createToolCallState (): ToolCallState {
     return { buffers: new Map(), emitted: new Set() };
 }
 
-export function processToolCallDelta(
+export function processToolCallDelta (
     toolCalls: Array<{ id?: string; function?: { name?: string; arguments?: string | Record<string, unknown>; }; }>,
     state: ToolCallState,
     map: ToolCallIdMap,
@@ -22,7 +22,7 @@ export function processToolCallDelta(
     for ( const toolCall of toolCalls ) {
         const mistralId = toolCall.id;
         if ( !mistralId || mistralId === `null` ) {
-            log.debug( `[Mistral] tool call delta skipped — missing or null id` );
+            log.debug( `[Mistral] tool call delta skipped - missing or null id` );
             continue;
         }
 
@@ -33,7 +33,7 @@ export function processToolCallDelta(
         if ( toolCall.function?.name ) {
             buf.name = toolCall.function.name;
             if ( isNew ) {
-                log.debug( `[Mistral] tool call new buffer — mistralId=${ mistralId } vsCodeId=${ vsCodeId } name=${ buf.name }` );
+                log.debug( `[Mistral] tool call new buffer - mistralId=${ mistralId } vsCodeId=${ vsCodeId } name=${ buf.name }` );
             }
         }
 
@@ -55,18 +55,18 @@ export function processToolCallDelta(
                 progress.report( new LanguageModelToolCallPart( vsCodeId, buf.name, parsedObj ) );
                 state.emitted.add( vsCodeId );
             } catch {
-                log.debug( `[Mistral] tool call args not yet valid JSON, buffering — vsCodeId=${ vsCodeId } argsLen=${ buf.argsText.length }` );
+                log.debug( `[Mistral] tool call args not yet valid JSON, buffering - vsCodeId=${ vsCodeId } argsLen=${ buf.argsText.length }` );
             }
         }
     }
 }
 
-export function flushToolCallState(
+export function flushToolCallState (
     state: ToolCallState,
     progress: Progress<LanguageModelResponsePart>,
     log: { info: ( msg: string ) => void; warn: ( msg: string ) => void; },
 ): void {
-    for ( const [vsCodeId, buf] of state.buffers ) {
+    for ( const [ vsCodeId, buf ] of state.buffers ) {
         if ( state.emitted.has( vsCodeId ) || !buf.name ) {
             continue;
         }

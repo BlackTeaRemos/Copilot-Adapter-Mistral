@@ -24,7 +24,7 @@ describe( `getOrCreateVsCodeToolCallId`, () => {
         expect( getOrCreateVsCodeToolCallId( map, `mistral-abc` ) ).toMatch( /^[a-zA-Z0-9]{9}$/ );
     } );
 
-    it( `idempotent — same mistral ID returns same vsCode ID`, () => {
+    it( `idempotent - same mistral ID returns same vsCode ID`, () => {
         const map = createToolCallIdMap();
         const a = getOrCreateVsCodeToolCallId( map, `mistral-abc` );
         const b = getOrCreateVsCodeToolCallId( map, `mistral-abc` );
@@ -70,7 +70,7 @@ describe( `getMistralToolCallId`, () => {
     } );
 } );
 
-describe( `createToolCallIdMap — clear by recreation`, () => {
+describe( `createToolCallIdMap - clear by recreation`, () => {
     it( `fresh map has no entries`, () => {
         const map = createToolCallIdMap();
         getOrCreateVsCodeToolCallId( map, `mistral-x` );

@@ -12,7 +12,7 @@ export { pickCanonical };
 type KnownModelCard = BaseModelCard | FTModelCard;
 
 
-async function _fetchModels(
+async function _fetchModels (
     client: Mistral,
     log: MistralClientLogger,
 ): Promise<MistralModel[]> {
@@ -34,7 +34,7 @@ async function _fetchModels(
 
     // Store all models in the CapabilityModelStore, including non-chat models.
     // Deduplication by family prefix is handled internally by CapabilityModelStore.insertModel.
-    for ( const [, modelCard] of byId ) {
+    for ( const [ , modelCard ] of byId ) {
         const originalName = modelCard.name ? formatModelName( modelCard.name ) : formatModelName( modelCard.id );
         const model: MistralModel = {
             id: modelCard.id,
@@ -65,7 +65,7 @@ async function _fetchModels(
         if ( group ) {
             group.push( model );
         } else {
-            byName.set( model.name, [model] );
+            byName.set( model.name, [ model ] );
         }
     }
 
@@ -85,10 +85,10 @@ async function _fetchModels(
     return result;
 }
 
-export async function fetchModels( client: Mistral, log: MistralClientLogger ): Promise<MistralModel[]> {
+export async function fetchModels ( client: Mistral, log: MistralClientLogger ): Promise<MistralModel[]> {
     try {
         return await _fetchModels( client, log );
-    } catch( error ) {
+    } catch ( error ) {
         log.error( `[Mistral] Failed to fetch models: ` + String( error ) );
         return [];
     }

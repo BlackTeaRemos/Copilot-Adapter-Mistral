@@ -5,22 +5,22 @@ const COPILOT_SECTION = `github.copilot`;
 const COPILOT_ENABLE = `enable`;
 
 export class InlineCompletionToggle {
-    constructor(
+    constructor (
         private readonly context: vscode.ExtensionContext,
         private readonly log: vscode.LogOutputChannel,
     ) { }
 
-    public isEnabled(): boolean {
+    public isEnabled (): boolean {
         return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionEnabled` ) ?? false;
     }
 
-    private getModelId(): string {
+    private getModelId (): string {
         return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionModel` ) ?? ``;
     }
 
-    public render(): void { }
+    public render (): void { }
 
-    public async enable(): Promise<void> {
+    public async enable (): Promise<void> {
         const copilotCfg = vscode.workspace.getConfiguration( COPILOT_SECTION );
         const inspect = copilotCfg.inspect<Record<string, boolean>>( COPILOT_ENABLE );
         const current = inspect?.globalValue;
@@ -34,11 +34,11 @@ export class InlineCompletionToggle {
         await vscode.workspace.getConfiguration( `mistral` ).update(
             `inlineCompletionEnabled`, true, vscode.ConfigurationTarget.Global,
         );
-        this.log.info( `[Mistral] Inline completions enabled — Copilot inline disabled (github.copilot.enable = { "*": false }).` );
+        this.log.info( `[Mistral] Inline completions enabled - Copilot inline disabled (github.copilot.enable = { "*": false }).` );
         this.render();
     }
 
-    public async disable(): Promise<void> {
+    public async disable (): Promise<void> {
         const copilotCfg = vscode.workspace.getConfiguration( COPILOT_SECTION );
         const backup = this.context.globalState.get<Record<string, boolean> | null>( COPILOT_BACKUP_KEY );
 
@@ -50,11 +50,11 @@ export class InlineCompletionToggle {
         await vscode.workspace.getConfiguration( `mistral` ).update(
             `inlineCompletionEnabled`, false, vscode.ConfigurationTarget.Global,
         );
-        this.log.info( `[Mistral] Inline completions disabled — Copilot inline restored.` );
+        this.log.info( `[Mistral] Inline completions disabled - Copilot inline restored.` );
         this.render();
     }
 
-    public async toggle(): Promise<void> {
+    public async toggle (): Promise<void> {
         if ( this.isEnabled() ) {
             await this.disable();
         } else {

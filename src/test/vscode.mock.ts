@@ -38,17 +38,17 @@ export class EventEmitter<T> {
         };
     };
 
-    public fire( data: T ): void {
+    public fire ( data: T ): void {
         this.listeners.forEach( listener => {
             try {
                 listener( data );
-            } catch( error ) {
+            } catch ( error ) {
                 console.error( `Error in event listener:`, error );
             }
         } );
     }
 
-    public dispose(): void {
+    public dispose (): void {
         this.listeners.length = 0;
     }
 }
@@ -70,11 +70,11 @@ export enum InputBoxValidationSeverity {
 }
 
 export class LanguageModelTextPart {
-    constructor( public readonly value: string ) { }
+    constructor ( public readonly value: string ) { }
 }
 
 export class LanguageModelToolCallPart {
-    constructor(
+    constructor (
         public readonly callId: string,
         public readonly name: string,
         public readonly input: Record<string, unknown>,
@@ -82,28 +82,28 @@ export class LanguageModelToolCallPart {
 }
 
 export class LanguageModelToolResultPart {
-    constructor(
+    constructor (
         public readonly callId: string,
         public readonly content: LanguageModelTextPart[],
     ) { }
 }
 
 export class LanguageModelDataPart {
-    constructor(
+    constructor (
         public readonly data: Uint8Array,
         public readonly mimeType: string,
     ) { }
 }
 
 export class LanguageModelToolResult {
-    constructor( public readonly content: unknown[] ) { }
+    constructor ( public readonly content: unknown[] ) { }
 }
 
 export const window = {
     showInputBox: vi.fn(),
     showQuickPick: vi.fn(),
     showErrorMessage: vi.fn(),
-    withProgress: vi.fn( async( _opts: unknown, task: ( progress: unknown, token: unknown ) => unknown ) => {
+    withProgress: vi.fn( async ( _opts: unknown, task: ( progress: unknown, token: unknown ) => unknown ) => {
         return task( { report: vi.fn() }, { isCancellationRequested: false, onCancellationRequested: () => {
             return  { dispose: vi.fn() };
         } } );
@@ -173,31 +173,31 @@ export class CancellationTokenSource {
             return { dispose: vi.fn() };
         },
     };
-    public cancel() {
+    public cancel () {
         this.token.isCancellationRequested = true;
         for ( const l of this._listeners ) {
             l();
         }
     }
-    public dispose() {
+    public dispose () {
         this._listeners = [];
     }
 }
 
 export class Position {
-    constructor( public readonly line: number, public readonly character: number ) { }
+    constructor ( public readonly line: number, public readonly character: number ) { }
 }
 
 export class Range {
-    constructor( public readonly start: Position, public readonly end: Position ) { }
+    constructor ( public readonly start: Position, public readonly end: Position ) { }
 }
 
 export class InlineCompletionItem {
-    constructor( public readonly insertText: string, public readonly range?: Range ) { }
+    constructor ( public readonly insertText: string, public readonly range?: Range ) { }
 }
 
 export class ThemeColor {
-    constructor( public readonly id: string ) { }
+    constructor ( public readonly id: string ) { }
 }
 
 export enum StatusBarAlignment {
@@ -206,17 +206,17 @@ export enum StatusBarAlignment {
 }
 
 export class MarkdownString {
-    constructor( public readonly value: string ) { }
+    constructor ( public readonly value: string ) { }
 }
 
 export class LanguageModelChatMessage {
-    static User( content: string | Part[], name?: string ): LanguageModelChatMessage {
+    static User ( content: string | Part[], name?: string ): LanguageModelChatMessage {
         return new LanguageModelChatMessage( LanguageModelChatMessageRole.User, content, name );
     }
-    static Assistant( content: string | Part[], name?: string ): LanguageModelChatMessage {
+    static Assistant ( content: string | Part[], name?: string ): LanguageModelChatMessage {
         return new LanguageModelChatMessage( LanguageModelChatMessageRole.Assistant, content, name );
     }
-    constructor(
+    constructor (
         public readonly role: LanguageModelChatMessageRole,
         public readonly content: string | Part[],
         public readonly name?: string,
@@ -230,19 +230,19 @@ export type Part =
     | LanguageModelDataPart;
 
 export class ChatRequestTurn {
-    constructor( public readonly prompt: string ) { }
+    constructor ( public readonly prompt: string ) { }
 }
 
 export class ChatResponseTurn {
-    constructor( public readonly response: ChatResponseMarkdownPart[] ) { }
+    constructor ( public readonly response: ChatResponseMarkdownPart[] ) { }
 }
 
 export class ChatResponseTurn2 {
-    constructor( public readonly response: ChatResponseMarkdownPart[] ) { }
+    constructor ( public readonly response: ChatResponseMarkdownPart[] ) { }
 }
 
 export class ChatResponseMarkdownPart {
-    constructor( public readonly value: MarkdownString ) { }
+    constructor ( public readonly value: MarkdownString ) { }
 }
 
 export const Uri = {

@@ -84,6 +84,22 @@
       {
         "command": "mistral-adapter.embeddingMenu",
         "title": "Mistral: Embedding Index Actions"
+      },
+      {
+        "command": "mistral-adapter.configureUtilityModels",
+        "title": "Mistral: Configure Utility Models"
+      },
+      {
+        "command": "mistral-adapter.selectUtilityModel",
+        "title": "Mistral: Select Utility Model"
+      },
+      {
+        "command": "mistral-adapter.selectUtilitySmallModel",
+        "title": "Mistral: Select Small Utility Model"
+      },
+      {
+        "command": "mistral-adapter.utilityModelMenu",
+        "title": "Mistral: Utility Model Actions"
       }
     ],
     "languageModelChatProviders": [
@@ -185,6 +201,18 @@
           "default": false,
           "markdownDescription": "When enabled, Mistral FIM provides inline completions and Copilot's inline suggestions are disabled (`github.copilot.enable` set to `{ \"*\": false }`). Toggle via the status bar button or the __\"Mistral: Toggle Inline Completions\"__ command, which automatically restores Copilot when turned off.",
           "order": 8
+        },
+        "mistral.utilityModel": {
+          "type": "string",
+          "default": "mistral/mistral-large-latest",
+          "markdownDescription": "Default Mistral model ID (vendor-qualified, e.g. `mistral/mistral-large-latest`) written to `chat.utilityModel` when you run __\"Mistral: Configure Utility Models\"__. Use __\"Mistral: Select Utility Model\"__ to pick from fetched models.",
+          "order": 10
+        },
+        "mistral.utilitySmallModel": {
+          "type": "string",
+          "default": "mistral/mistral-small-latest",
+          "markdownDescription": "Default Mistral model ID (vendor-qualified, e.g. `mistral/mistral-small-latest`) written to `chat.utilitySmallModel` when you run __\"Mistral: Configure Utility Models\"__. Use __\"Mistral: Select Small Utility Model\"__ to pick from fetched models.",
+          "order": 11
         },
         "mistral.embeddingModel": {
           "type": "string",

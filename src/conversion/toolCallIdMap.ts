@@ -1,18 +1,18 @@
 import { randomUUID } from 'crypto';
 import type { ToolCallIdMap } from '../types.js';
 
-export function createToolCallIdMap(): ToolCallIdMap {
+export function createToolCallIdMap (): ToolCallIdMap {
     return {
         vsCodeToMistral: new Map(),
         mistralToVsCode: new Map(),
     };
 }
 
-export function generateToolCallId(): string {
+export function generateToolCallId (): string {
     return randomUUID().replace( /-/g, `` ).substring( 0, 9 );
 }
 
-export function getOrCreateVsCodeToolCallId( map: ToolCallIdMap, mistralId: string ): string {
+export function getOrCreateVsCodeToolCallId ( map: ToolCallIdMap, mistralId: string ): string {
     if ( map.mistralToVsCode.has( mistralId ) ) {
         return map.mistralToVsCode.get( mistralId )!;
     }
@@ -22,7 +22,7 @@ export function getOrCreateVsCodeToolCallId( map: ToolCallIdMap, mistralId: stri
     return vsCodeId;
 }
 
-export function getOrCreateMistralToolCallId( map: ToolCallIdMap, vsCodeId: string ): string {
+export function getOrCreateMistralToolCallId ( map: ToolCallIdMap, vsCodeId: string ): string {
     if ( map.vsCodeToMistral.has( vsCodeId ) ) {
         return map.vsCodeToMistral.get( vsCodeId )!;
     }
@@ -32,6 +32,6 @@ export function getOrCreateMistralToolCallId( map: ToolCallIdMap, vsCodeId: stri
     return mistralId;
 }
 
-export function getMistralToolCallId( map: ToolCallIdMap, vsCodeId: string ): string | undefined {
+export function getMistralToolCallId ( map: ToolCallIdMap, vsCodeId: string ): string | undefined {
     return map.vsCodeToMistral.get( vsCodeId );
 }

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { CapabilityModelStore, familyPrefix, pickCanonical } from './modelStore.js';
 import type { MistralModel } from '../types.js';
 
-function model( id: string, over: Partial<MistralModel> = {} ): MistralModel {
+function model ( id: string, over: Partial<MistralModel> = {} ): MistralModel {
     return {
         id,
         name: id,
@@ -38,15 +38,15 @@ describe( `familyPrefix`, () => {
 
 describe( `pickCanonical`, () => {
     it( `prefers a latest variant over versioned ids`, () => {
-        expect( pickCanonical( [`mistral-large-2512`, `mistral-large-latest`] ) ).toBe( `mistral-large-latest` );
+        expect( pickCanonical( [ `mistral-large-2512`, `mistral-large-latest` ] ) ).toBe( `mistral-large-latest` );
     } );
 
     it( `picks the highest numeric version when no latest exists`, () => {
-        expect( pickCanonical( [`m-3`, `m-3-5`, `m-3.5`, `m-c21211-r0-75`] ) ).toBe( `m-c21211-r0-75` );
+        expect( pickCanonical( [ `m-3`, `m-3-5`, `m-3.5`, `m-c21211-r0-75` ] ) ).toBe( `m-c21211-r0-75` );
     } );
 
     it( `returns the sole id for a singleton list`, () => {
-        expect( pickCanonical( [`only-one`] ) ).toBe( `only-one` );
+        expect( pickCanonical( [ `only-one` ] ) ).toBe( `only-one` );
     } );
 } );
 
@@ -75,7 +75,7 @@ describe( `CapabilityModelStore`, () => {
         store.insertModel( model( `mistral-large-2512` ) );
         expect( store.getAllModels().map( m => {
             return m.id;
-        } ) ).toEqual( [`mistral-large-latest`] );
+        } ) ).toEqual( [ `mistral-large-latest` ] );
     } );
 
     it( `indexes models by capability`, () => {
@@ -83,13 +83,13 @@ describe( `CapabilityModelStore`, () => {
         store.insertModel( model( `b-latest`, { supportsCompletionFim: true } ) );
         expect( store.getModelsWithToolCalling().map( m => {
             return m.id;
-        } ) ).toEqual( [`a-latest`] );
+        } ) ).toEqual( [ `a-latest` ] );
         expect( store.getModelsWithVision().map( m => {
             return m.id;
-        } ) ).toEqual( [`a-latest`] );
+        } ) ).toEqual( [ `a-latest` ] );
         expect( store.getModelsWithCompletionFim().map( m => {
             return m.id;
-        } ) ).toEqual( [`b-latest`] );
+        } ) ).toEqual( [ `b-latest` ] );
     } );
 
     it( `getChatModels returns models flagged completionChat`, () => {
@@ -97,7 +97,7 @@ describe( `CapabilityModelStore`, () => {
         store.insertModel( model( `embed-latest`, { completionChat: false } ) );
         expect( store.getChatModels().map( m => {
             return m.id;
-        } ) ).toEqual( [`chat-latest`] );
+        } ) ).toEqual( [ `chat-latest` ] );
     } );
 
     it( `clear empties every index`, () => {

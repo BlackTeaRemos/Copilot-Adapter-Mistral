@@ -42,7 +42,7 @@ import { computePromptCacheKey } from './promptCacheKey.js';
 import { setApiKey, signInWithBrowser, initClient, type AuthDeps } from './auth/index.js';
 import { updateStatusBar } from './statusBar.js';
 
-function extractText( part: unknown ): string {
+function extractText ( part: unknown ): string {
     if ( part instanceof LanguageModelTextPart ) {
         return part.value;
     }
@@ -79,22 +79,24 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
     readonly onDidChangeLanguageModelChatInformation: Event<void> = this._onDidChangeLanguageModelChatInformation.event;
 
-    isAuthenticated(): boolean {
+    isAuthenticated (): boolean {
         return this.client !== null;
     }
 
-    refreshStatusBar(): void {
-        if ( !this.statusBarItem ) return;
+    refreshStatusBar (): void {
+        if ( !this.statusBarItem ) {
+            return;
+        }
         if ( !this.isAuthenticated() ) {
             updateStatusBar( this.statusBarItem, { input: 0, output: 0, cached: 0, lastPrompt: 0 }, ``, ``, this.calibration, false );
         }
     }
 
-    get currentModelName(): string {
+    get currentModelName (): string {
         return this.lastModelName;
     }
 
-    constructor(
+    constructor (
         private readonly context: ExtensionContext,
         logOutputChannel?: LogOutputChannel,
         autoInit: boolean = false,
@@ -112,7 +114,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         }
     }
 
-    private authDeps(): AuthDeps {
+    private authDeps (): AuthDeps {
         return {
             context: this.context,
             log: this.log,
@@ -131,19 +133,19 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         };
     }
 
-    private callInitClient( silent: boolean ): Promise<boolean> {
+    private callInitClient ( silent: boolean ): Promise<boolean> {
         return initClient( silent, this.authDeps() );
     }
 
-    public setApiKey(): Promise<string | undefined> {
+    public setApiKey (): Promise<string | undefined> {
         return setApiKey( this.authDeps() );
     }
 
-    public signInWithBrowser(): Promise<string | undefined> {
+    public signInWithBrowser (): Promise<string | undefined> {
         return signInWithBrowser( this.authDeps() );
     }
 
-    public async fetchModels(): Promise<MistralModel[]> {
+    public async fetchModels (): Promise<MistralModel[]> {
         const now = Date.now();
         if ( this.fetchedModels !== null && now - this.modelCacheTimestamp < MistralChatModelProvider.MODEL_CACHE_TTL_MS ) {
             return this.fetchedModels;
@@ -157,7 +159,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         return this.fetchedModels;
     }
 
-    async provideLanguageModelChatInformation(
+    async provideLanguageModelChatInformation (
         options: { silent: boolean; },
         token: CancellationToken,
     ): Promise<LanguageModelChatInformation[]> {
@@ -194,7 +196,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         } );
     }
 
-    async provideLanguageModelChatResponse(
+    async provideLanguageModelChatResponse (
         model: LanguageModelChatInformation,
         messages: Array<LanguageModelChatMessage>,
         options: ProvideLanguageModelChatResponseOptions,
@@ -222,7 +224,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
         const mistralMessages = toMistralMessages( messages, this.toolCallIdMap );
         const mistralTools = options.tools?.map( tool => {
-            return  {
+            return {
                 type: `function` as const,
                 function: { name: tool.name, description: tool.description, parameters: tool.inputSchema || {} },
             };
@@ -295,10 +297,10 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
                 updateStatusBar( this.statusBarItem, this.tokensUsedThisSession, this.lastModelName, this.lastModelId, this.calibration, true );
             }
             this.log.debug(
-                `[Mistral] stream complete — model=${ ctx.servedModel ?? model.id } input=${ this.tokensUsedThisSession.input } output=${ this.tokensUsedThisSession.output } cached=${ this.tokensUsedThisSession.cached }` +
+                `[Mistral] stream complete - model=${ ctx.servedModel ?? model.id } input=${ this.tokensUsedThisSession.input } output=${ this.tokensUsedThisSession.output } cached=${ this.tokensUsedThisSession.cached }` +
                 ( ctx.truncated ? ` TRUNCATED` : `` ),
             );
-        } catch( error ) {
+        } catch ( error ) {
             const errorMessage = error instanceof Error ? error.message : `Unknown error occurred`;
             this.log.error( `[Mistral] provideLanguageModelChatResponse error: ` + ( error instanceof Error ? error.stack || error.message : String( error ) ) );
             progress.report( new LanguageModelTextPart( `Error: ${ errorMessage }` ) );
@@ -309,11 +311,11 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
     /**
      * Returns the active token encoder. Prefers the bundled native Mistral
-     * (tekken) tokenizer — exact counts, no calibration needed — and falls back
+     * (tekken) tokenizer - exact counts, no calibration needed - and falls back
      * to cl100k_base + the learned scale factor when the tekken assets are
      * unavailable.
      */
-    private getEncoder(): { enc: Tiktoken; native: boolean; } {
+    private getEncoder (): { enc: Tiktoken; native: boolean; } {
         const native = getMistralTokenizer( this.context.extensionUri?.fsPath ?? `` );
         if ( native ) {
             return { enc: native, native: true };
@@ -324,7 +326,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         return { enc: this.tokenizer, native: false };
     }
 
-    async provideTokenCount(
+    async provideTokenCount (
         model: LanguageModelChatInformation,
         text: string | LanguageModelChatMessage,
         _token: CancellationToken,
@@ -343,7 +345,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         return scale !== undefined ? Math.round( raw * scale ) : raw;
     }
 
-    private reportTokenUsage( progress: Progress<LanguageModelResponsePart>, usage: UsageStats ): void {
+    private reportTokenUsage ( progress: Progress<LanguageModelResponsePart>, usage: UsageStats ): void {
         progress.report( new LanguageModelDataPart(
             new TextEncoder().encode( JSON.stringify( {
                 prompt_tokens: usage.input, completion_tokens: usage.output,
@@ -354,7 +356,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         ) );
     }
 
-    private recordCalibration( modelId: string, lastPrompt: number, messages: Array<LanguageModelChatMessage> ): void {
+    private recordCalibration ( modelId: string, lastPrompt: number, messages: Array<LanguageModelChatMessage> ): void {
         const { enc, native } = this.getEncoder();
         // Native tekken counts are exact, so no scale factor is needed.
         if ( native ) {
@@ -373,24 +375,24 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         this.calibration.record( modelId, lastPrompt, requestTiktoken );
     }
 
-    private logCacheHit( cached: number, lastPrompt: number, input: number, modelId: string ): void {
+    private logCacheHit ( cached: number, lastPrompt: number, input: number, modelId: string ): void {
         if ( cached > 0 ) {
             const denom = input > 0 ? input : lastPrompt;
             const pct = denom > 0 ? Math.round( ( cached / denom ) * 100 ) : 0;
             const saved = Math.round( cached * 0.9 );
             this.log.info(
-                `[Mistral] prompt cache hit — cached=${ cached }/${ denom } prompt tokens (${ pct }%), ~${ saved } billed-token equivalent saved (calibration samples: ${ this.calibration.sampleCount( modelId ) })`,
+                `[Mistral] prompt cache hit - cached=${ cached }/${ denom } prompt tokens (${ pct }%), ~${ saved } billed-token equivalent saved (calibration samples: ${ this.calibration.sampleCount( modelId ) })`,
             );
         }
     }
 
-    private reportTruncationWarning( progress: Progress<LanguageModelResponsePart>, foundModel: MistralModel ): void {
+    private reportTruncationWarning ( progress: Progress<LanguageModelResponsePart>, foundModel: MistralModel ): void {
         progress.report( new LanguageModelTextPart(
-            `\n\n⚠️ Response truncated — output hit the token limit (${ foundModel.defaultCompletionTokens } tokens). Consider increasing maxTokens or shortening context.`,
+            `\n\n⚠️ Response truncated - output hit the token limit (${ foundModel.defaultCompletionTokens } tokens). Consider increasing maxTokens or shortening context.`,
         ) );
     }
 
-    private logModelRedirect( ctx: StreamContext, modelId: string ): void {
+    private logModelRedirect ( ctx: StreamContext, modelId: string ): void {
         if ( ctx.servedModel && ctx.servedModel !== modelId ) {
             this.log.info( `[Mistral] model redirect: requested=${ modelId } served=${ ctx.servedModel }` );
             this.lastModelName = ctx.servedModel;
@@ -398,22 +400,22 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         }
     }
 
-    public dispose(): void {
+    public dispose (): void {
         this.tokenizer = null;
         this.statusBarItem?.hide();
         this._onDidChangeLanguageModelChatInformation.dispose();
         this.client = null;
     }
 
-    public getUsageStats(): UsageStats {
+    public getUsageStats (): UsageStats {
         return { ...this.tokensUsedThisSession };
     }
 
-    public getClient(): Mistral | null {
+    public getClient (): Mistral | null {
         return this.client;
     }
 
-    public async ensureClient( silent: boolean = true ): Promise<Mistral | null> {
+    public async ensureClient ( silent: boolean = true ): Promise<Mistral | null> {
         if ( this.initPromise ) {
             try {
                 await this.initPromise;

@@ -31,7 +31,7 @@ vi.mock( `./provider`, () => {
     };
 
     return {
-        MistralChatModelProvider: vi.fn().mockImplementation( function(
+        MistralChatModelProvider: vi.fn().mockImplementation( function (
             context: any,
             logOutputChannel: any,
             autoInit?: boolean,
@@ -104,14 +104,14 @@ describe( `extension`, () => {
         } );
     } );
 
-    describe( `activate — participant handler`, () => {
-        async function getHandler() {
+    describe( `activate - participant handler`, () => {
+        async function getHandler () {
             activate( mockContext );
-            const [, handler] = ( chat.createChatParticipant as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
+            const [ , handler ] = ( chat.createChatParticipant as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
             return handler;
         }
 
-        it( `sends history + prompt to request.model.sendRequest`, async() => {
+        it( `sends history + prompt to request.model.sendRequest`, async () => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };
@@ -129,12 +129,12 @@ describe( `extension`, () => {
             await handler( mockRequest, mockChatContext, mockStream, mockToken );
 
             expect( mockSendRequest ).toHaveBeenCalledOnce();
-            const [messages] = mockSendRequest.mock.calls[ 0 ];
+            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
             // Last message is the current prompt
             expect( messages.at( -1 ).content ).toBe( `hello` );
         } );
 
-        it( `streams text chunks back as markdown`, async() => {
+        it( `streams text chunks back as markdown`, async () => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };
@@ -154,7 +154,7 @@ describe( `extension`, () => {
             expect( mockStream.markdown ).toHaveBeenCalledWith( `chunk2` );
         } );
 
-        it( `includes prior ChatRequestTurn as a User message in history`, async() => {
+        it( `includes prior ChatRequestTurn as a User message in history`, async () => {
             const handler = await getHandler();
 
             const mockResponse = { stream: ( async function* () { } )() };
@@ -163,17 +163,17 @@ describe( `extension`, () => {
             const priorRequest = new ( ChatRequestTurn as any )( `prior question` );
             await handler(
                 { prompt: `follow-up`, model: { sendRequest: mockSendRequest } },
-                { history: [priorRequest] },
+                { history: [ priorRequest ] },
                 { markdown: vi.fn() },
                 { isCancellationRequested: false },
             );
 
-            const [messages] = mockSendRequest.mock.calls[ 0 ];
+            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
             expect( messages[ 0 ].content ).toBe( `prior question` );
             expect( messages[ 1 ].content ).toBe( `follow-up` );
         } );
 
-        it( `includes prior ChatResponseTurn as an Assistant message in history`, async() => {
+        it( `includes prior ChatResponseTurn as an Assistant message in history`, async () => {
             const handler = await getHandler();
 
             const mockResponse = { stream: ( async function* () { } )() };
@@ -184,16 +184,16 @@ describe( `extension`, () => {
             ] );
             await handler(
                 { prompt: `next`, model: { sendRequest: mockSendRequest } },
-                { history: [priorResponse] },
+                { history: [ priorResponse ] },
                 { markdown: vi.fn() },
                 { isCancellationRequested: false },
             );
 
-            const [messages] = mockSendRequest.mock.calls[ 0 ];
+            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
             expect( messages[ 0 ].content ).toBe( `prior answer` );
         } );
 
-        it( `includes prior ChatResponseTurn2 as an Assistant message in history`, async() => {
+        it( `includes prior ChatResponseTurn2 as an Assistant message in history`, async () => {
             const handler = await getHandler();
 
             const mockResponse = { stream: ( async function* () { } )() };
@@ -208,16 +208,16 @@ describe( `extension`, () => {
             ] );
             await handler(
                 { prompt: `next`, model: { sendRequest: mockSendRequest } },
-                { history: [priorResponseV2] },
+                { history: [ priorResponseV2 ] },
                 { markdown: vi.fn() },
                 { isCancellationRequested: false },
             );
 
-            const [messages] = mockSendRequest.mock.calls[ 0 ];
+            const [ messages ] = mockSendRequest.mock.calls[ 0 ];
             expect( messages[ 0 ].content ).toBe( `prior v2 answer` );
         } );
 
-        it( `surfaces errors as a markdown message`, async() => {
+        it( `surfaces errors as a markdown message`, async () => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };
@@ -230,7 +230,7 @@ describe( `extension`, () => {
             expect( mockStream.markdown ).toHaveBeenCalledWith( expect.stringContaining( `model unavailable` ) );
         } );
 
-        it( `sanitizes error messages and hides sensitive details`, async() => {
+        it( `sanitizes error messages and hides sensitive details`, async () => {
             const handler = await getHandler();
 
             const mockStream = { markdown: vi.fn() };

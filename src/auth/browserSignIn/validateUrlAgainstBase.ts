@@ -6,7 +6,7 @@ import { BrowserSignInError } from './browserSignInError.js';
  * compromised or spoofed response can't redirect the browser or our polling to
  * an attacker-controlled host.
  */
-export function validateUrlAgainstBase( value: string, baseUrl: string ): string {
+export function validateUrlAgainstBase ( value: string, baseUrl: string ): string {
     let current: URL;
     let base: URL;
     try {

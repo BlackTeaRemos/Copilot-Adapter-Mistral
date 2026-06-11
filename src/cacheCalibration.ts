@@ -1,6 +1,6 @@
 import type { ExtensionContext } from 'vscode';
 
-/** Welford incremental mean — O(1) space, no sample window. */
+/** Welford incremental mean - O(1) space, no sample window. */
 type RunningMean = {
     mean: number;
     n: number;
@@ -9,7 +9,7 @@ type RunningMean = {
 
 const ZERO_MEAN: RunningMean = { mean: 0, n: 0, lastDelta: 0 };
 
-function updateMean( prev: RunningMean, x: number ): RunningMean {
+function updateMean ( prev: RunningMean, x: number ): RunningMean {
     const n = prev.n + 1;
     const mean = prev.mean + ( x - prev.mean ) / n;
     return { mean, n, lastDelta: Math.abs( mean - prev.mean ) };
@@ -21,7 +21,7 @@ function updateMean( prev: RunningMean, x: number ): RunningMean {
  *   n=0  → 0.00   n=3  → 0.50
  *   n=8  → 0.67   n=24 → 0.80
  */
-function confidence( m: RunningMean ): number {
+function confidence ( m: RunningMean ): number {
     const countFactor = 1 - 1 / Math.sqrt( m.n + 1 );
     if ( m.n < 2 || m.mean === 0 ) {
         return countFactor;
@@ -45,7 +45,7 @@ const MIN_CONF = 0.4;
 export class TokenizerCalibration {
     private data: Map<string, RunningMean>;
 
-    constructor( private readonly ctx: ExtensionContext ) {
+    constructor ( private readonly ctx: ExtensionContext ) {
         const stored = ctx.globalState.get<Record<string, RunningMean>>( STORAGE_KEY, {} );
         this.data = new Map( Object.entries( stored ) );
     }
@@ -56,7 +56,7 @@ export class TokenizerCalibration {
      * @param mistralPromptTokens  Actual prompt tokens from Mistral API response.
      * @param tiktokenEstimate     Our tiktoken estimate for the same prompt (0 = unknown).
      */
-    record( modelId: string, mistralPromptTokens: number, tiktokenEstimate: number ): void {
+    record ( modelId: string, mistralPromptTokens: number, tiktokenEstimate: number ): void {
         if ( mistralPromptTokens <= 0 || tiktokenEstimate <= 0 ) {
             return;
         }
@@ -69,23 +69,23 @@ export class TokenizerCalibration {
      * Scale factor to multiply tiktoken counts by to approximate Mistral counts.
      * Returns `undefined` when confidence is below threshold.
      */
-    scale( modelId: string ): number | undefined {
+    scale ( modelId: string ): number | undefined {
         const m = this.data.get( modelId );
         return m && confidence( m ) >= MIN_CONF ? m.mean : undefined;
     }
 
-    confidenceLevel( modelId: string ): number {
+    confidenceLevel ( modelId: string ): number {
         const m = this.data.get( modelId );
         return m ? confidence( m ) : 0;
     }
 
-    sampleCount( modelId: string ): number {
+    sampleCount ( modelId: string ): number {
         return this.data.get( modelId )?.n ?? 0;
     }
 
-    private async persist(): Promise<void> {
+    private async persist (): Promise<void> {
         const obj: Record<string, RunningMean> = {};
-        for ( const [k, v] of this.data ) {
+        for ( const [ k, v ] of this.data ) {
             obj[ k ] = v;
         }
         await this.ctx.globalState.update( STORAGE_KEY, obj );

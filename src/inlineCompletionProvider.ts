@@ -9,20 +9,20 @@ const DEFAULT_MAX_TOKENS = 256;
 export class MistralInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
     private session = { input: 0, output: 0, total: 0, calls: 0 };
 
-    constructor(
+    constructor (
         private readonly provider: MistralChatModelProvider,
         private readonly log: vscode.LogOutputChannel,
     ) { }
 
-    private getModelId(): string {
+    private getModelId (): string {
         return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionModel` ) ?? ``;
     }
 
-    private isEnabled(): boolean {
+    private isEnabled (): boolean {
         return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionEnabled` ) ?? false;
     }
 
-    async provideInlineCompletionItems(
+    async provideInlineCompletionItems (
         document: vscode.TextDocument,
         position: vscode.Position,
         _context: vscode.InlineCompletionContext,
@@ -83,7 +83,7 @@ export class MistralInlineCompletionProvider implements vscode.InlineCompletionI
             this.session.calls += 1;
 
             this.log.info(
-                `[Mistral FIM] ${ modelId } — ${ Date.now() - started }ms, ` +
+                `[Mistral FIM] ${ modelId } - ${ Date.now() - started }ms, ` +
                 `prompt=${ result.usage.promptTokens } completion=${ result.usage.completionTokens } total=${ result.usage.totalTokens } | ` +
                 `session: calls=${ this.session.calls } in=${ this.session.input } out=${ this.session.output } total=${ this.session.total }`,
             );
@@ -92,8 +92,8 @@ export class MistralInlineCompletionProvider implements vscode.InlineCompletionI
                 result.text,
                 new vscode.Range( position, position ),
             );
-            return [item];
-        } catch( error ) {
+            return [ item ];
+        } catch ( error ) {
             if ( abortController.signal.aborted || token.isCancellationRequested ) {
                 return undefined;
             }

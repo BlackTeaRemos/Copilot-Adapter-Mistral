@@ -4,7 +4,7 @@ import { BrowserSignInError, BrowserSignInService } from './browserSignIn/index.
 import { enterApiKeyManually } from './enterApiKeyManually.js';
 import { storeAndActivate } from './storeAndActivate.js';
 
-async function attemptSignIn( deps: AuthDeps, state: { signInUrl: string | undefined } ): Promise<string> {
+async function attemptSignIn ( deps: AuthDeps, state: { signInUrl: string | undefined } ): Promise<string> {
     const { log } = deps;
     const cts = new CancellationTokenSource();
     try {
@@ -14,17 +14,27 @@ async function attemptSignIn( deps: AuthDeps, state: { signInUrl: string | undef
                 title: `Signing in to Mistral…`,
                 cancellable: true,
             },
-            async( progress, token ) => {
-                const onCancel = token.onCancellationRequested( () => cts.cancel() );
+            async ( progress, token ) => {
+                const onCancel = token.onCancellationRequested( () => {
+                    return cts.cancel();
+                } );
                 try {
                     const abortController = new AbortController();
-                    cts.token.onCancellationRequested( () => abortController.abort() );
-                    if ( cts.token.isCancellationRequested ) abortController.abort();
+                    cts.token.onCancellationRequested( () => {
+                        return abortController.abort();
+                    } );
+                    if ( cts.token.isCancellationRequested ) {
+                        abortController.abort();
+                    }
                     const service = new BrowserSignInService( {
                         log,
                         signal: abortController.signal,
-                        onAttemptStarted: url => { state.signInUrl = url; },
-                        openBrowser: url => Promise.resolve( env.openExternal( Uri.parse( url ) ) ),
+                        onAttemptStarted: url => {
+                            state.signInUrl = url;
+                        },
+                        openBrowser: url => {
+                            return Promise.resolve( env.openExternal( Uri.parse( url ) ) );
+                        },
                         onStatus: status => {
                             const messages: Record<string, string> = {
                                 opening_browser: `Opening your browser…`,
@@ -53,12 +63,12 @@ async function attemptSignIn( deps: AuthDeps, state: { signInUrl: string | undef
  * Browser sign-in (PKCE) flow. Runs inside a cancellable progress notification;
  * cancelling aborts polling. Falls back to a hint toward manual entry on failure.
  */
-export async function signInWithBrowser( deps: AuthDeps ): Promise<string | undefined> {
+export async function signInWithBrowser ( deps: AuthDeps ): Promise<string | undefined> {
     const { log } = deps;
     const state = { signInUrl: undefined as string | undefined };
     try {
         return await attemptSignIn( deps, state );
-    } catch( err ) {
+    } catch ( err ) {
         if ( err instanceof BrowserSignInError ) {
             log.warn( `[Mistral] Browser sign-in failed (` + err.code + `): ` + err.message );
             // Browser couldn't be opened (e.g. popup blocked): let the user open
@@ -78,7 +88,9 @@ export async function signInWithBrowser( deps: AuthDeps ): Promise<string | unde
                 }
             } else if ( err.code !== `timed_out` ) {
                 const fallback = await window.showErrorMessage( err.message, `Paste API key instead` );
-                if ( fallback ) return enterApiKeyManually( deps );
+                if ( fallback ) {
+                    return enterApiKeyManually( deps );
+                }
             }
         } else {
             log.warn( `[Mistral] Browser sign-in failed: ` + String( err ) );
