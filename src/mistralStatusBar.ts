@@ -23,7 +23,6 @@ export class MistralStatusBar {
     private readonly mainItem: vscode.StatusBarItem;
     private readonly fimItem: vscode.StatusBarItem;
     private readonly indexItem: vscode.StatusBarItem;
-    private readonly utilityItem: vscode.StatusBarItem;
 
     private state: MistralStatusBarState = {
         authenticated: false,
@@ -38,7 +37,7 @@ export class MistralStatusBar {
     };
 
     constructor ( context: vscode.ExtensionContext ) {
-        // priorities 110, 109, 108, 107 → renders as: Mistral | FIM | Index | Utility
+        // priorities 110, 109, 108 → renders as: Mistral | FIM+Utility | Index
         this.mainItem = vscode.window.createStatusBarItem( vscode.StatusBarAlignment.Right, 110 );
         this.mainItem.name = `Mistral`;
 
@@ -50,11 +49,7 @@ export class MistralStatusBar {
         this.indexItem.name = `Mistral Index`;
         this.indexItem.command = `mistral-adapter.embeddingMenu`;
 
-        this.utilityItem = vscode.window.createStatusBarItem( vscode.StatusBarAlignment.Right, 107 );
-        this.utilityItem.name = `Mistral Utility`;
-        this.utilityItem.command = `mistral-adapter.utilityModelMenu`;
-
-        context.subscriptions.push( this.mainItem, this.fimItem, this.indexItem, this.utilityItem );
+        context.subscriptions.push( this.mainItem, this.fimItem, this.indexItem );
     }
 
     update ( patch: Partial<MistralStatusBarState> ): void {
@@ -77,46 +72,57 @@ export class MistralStatusBar {
             this.mainItem.show();
             this.fimItem.hide();
             this.indexItem.hide();
-            this.utilityItem.hide();
             return;
         }
 
-        const utilityLine = utilityModel.startsWith( `mistral/` ) || utilitySmallModel.startsWith( `mistral/` )
-            ? `\n\n$(hubot) Utility: \`${ utilityModel || `—` }\` · Small: \`${ utilitySmallModel || `—` }\`` +
-              `\n\n[$(settings-gear) Change utility models](command:mistral-adapter.utilityModelMenu)`
-            : `\n\n$(warning) Utility models not configured — [Set up](command:mistral-adapter.configureUtilityModels)`;
-
         this.mainItem.text = `$(hubot) Mistral`;
-        this.mainItem.tooltip = md( `**Mistral** - signed in${ utilityLine }` );
+        this.mainItem.tooltip = md( `**Mistral** - signed in` );
         this.mainItem.backgroundColor = undefined;
         this.mainItem.command = undefined;
         this.mainItem.show();
 
-        // FIM item
+        // FIM + Utility combined item - click toggles FIM
+        const utilityConfigured = utilityModel.startsWith( `mistral/` ) || utilitySmallModel.startsWith( `mistral/` );
+
+        const shortId = ( qualified: string ) => {
+            return qualified.startsWith( `mistral/` ) ? qualified.slice( `mistral/`.length ) : qualified;
+        };
+
+        const utilitySection =
+            `\n\n---\n\n` +
+            `[$(hubot) Utility: ${ utilityModel ? shortId( utilityModel ) : `not set` }](command:mistral-adapter.selectUtilityModel)\n\n` +
+            `[$(hubot) Small: ${ utilitySmallModel ? shortId( utilitySmallModel ) : `not set` }](command:mistral-adapter.selectUtilitySmallModel)\n\n` +
+            ( !utilityConfigured
+                ? `[$(check) Auto-configure both](command:mistral-adapter.configureUtilityModels)\n\n`
+                : `` );
+
         if ( fimEnabled && fimModelId ) {
             this.fimItem.text = `$(sparkle)`;
             this.fimItem.tooltip = md(
-                `**Mistral FIM** - on · \`${ fimModelId }\`\n\n` +
-                `[$(circle-slash) Turn off](command:mistral-adapter.toggleInlineCompletions) &nbsp; ` +
-                `[$(settings-gear) Change model](command:mistral-adapter.selectInlineCompletionModel)`,
+                `**Mistral FIM** - on\n\n` +
+                `[$(circle-slash) Turn off](command:mistral-adapter.toggleInlineCompletions)\n\n` +
+                `[$(settings-gear) FIM: ${ fimModelId }](command:mistral-adapter.selectInlineCompletionModel)` +
+                utilitySection,
             );
             this.fimItem.backgroundColor = undefined;
         } else if ( fimEnabled ) {
             this.fimItem.text = `$(warning)`;
             this.fimItem.tooltip = md(
-                `**Mistral FIM** - on · no model selected\n\n` +
-                `[$(settings-gear) Pick model](command:mistral-adapter.selectInlineCompletionModel) &nbsp; ` +
-                `[$(circle-slash) Turn off](command:mistral-adapter.toggleInlineCompletions)`,
+                `**Mistral FIM** - on · no model\n\n` +
+                `[$(circle-slash) Turn off](command:mistral-adapter.toggleInlineCompletions)\n\n` +
+                `[$(settings-gear) FIM: not set](command:mistral-adapter.selectInlineCompletionModel)` +
+                utilitySection,
             );
             this.fimItem.backgroundColor = new vscode.ThemeColor( `statusBarItem.warningBackground` );
         } else {
             this.fimItem.text = `$(circle-slash)`;
             this.fimItem.tooltip = md(
                 `**Mistral FIM** - off\n\n` +
-                `[$(sparkle) Enable](command:mistral-adapter.toggleInlineCompletions) &nbsp; ` +
-                `[$(settings-gear) Select model](command:mistral-adapter.selectInlineCompletionModel)`,
+                `[$(sparkle) Turn on](command:mistral-adapter.toggleInlineCompletions)\n\n` +
+                `[$(settings-gear) FIM: ${ fimModelId || `not set` }](command:mistral-adapter.selectInlineCompletionModel)` +
+                utilitySection,
             );
-            this.fimItem.backgroundColor = undefined;
+            this.fimItem.backgroundColor = utilityConfigured ? undefined : new vscode.ThemeColor( `statusBarItem.warningBackground` );
         }
         this.fimItem.show();
 
@@ -124,9 +130,10 @@ export class MistralStatusBar {
         if ( indexState === `ready` ) {
             this.indexItem.text = `$(database)`;
             this.indexItem.tooltip = md(
-                `**Mistral Index** - ${ indexChunkCount } chunks · ${ indexFileCount } files · \`${ indexModel }\`\n\n` +
-                `[$(refresh) Rebuild](command:mistral-adapter.buildEmbeddingIndex) &nbsp; ` +
-                `[$(search) Search](command:mistral-adapter.semanticSearch) &nbsp; ` +
+                `**Mistral Index** - ${ indexChunkCount } chunks · ${ indexFileCount } files\n\n` +
+                `[$(refresh) Rebuild](command:mistral-adapter.buildEmbeddingIndex)\n\n` +
+                `[$(search) Search](command:mistral-adapter.semanticSearch)\n\n` +
+                `[$(settings-gear) Embed: ${ indexModel }](command:mistral-adapter.selectEmbeddingModel)\n\n` +
                 `[$(trash) Clear](command:mistral-adapter.clearEmbeddingIndex)`,
             );
             this.indexItem.backgroundColor = undefined;
@@ -138,33 +145,11 @@ export class MistralStatusBar {
             this.indexItem.text = `$(database)`;
             this.indexItem.tooltip = md(
                 `**Mistral Index** - no index\n\n` +
-                `[$(database) Build](command:mistral-adapter.buildEmbeddingIndex) &nbsp; ` +
-                `[$(settings-gear) Select model](command:mistral-adapter.selectEmbeddingModel)`,
+                `[$(database) Build](command:mistral-adapter.buildEmbeddingIndex)\n\n` +
+                `[$(settings-gear) Embed: ${ indexModel || `not set` }](command:mistral-adapter.selectEmbeddingModel)`,
             );
             this.indexItem.backgroundColor = new vscode.ThemeColor( `statusBarItem.warningBackground` );
         }
         this.indexItem.show();
-
-        // Utility item
-        const utilityConfigured = utilityModel.startsWith( `mistral/` ) || utilitySmallModel.startsWith( `mistral/` );
-        if ( utilityConfigured ) {
-            this.utilityItem.text = `$(hubot)`;
-            this.utilityItem.tooltip = md(
-                `**Mistral Utility** - configured\n\n` +
-                `Utility: \`${ utilityModel || `—` }\`  ·  Small: \`${ utilitySmallModel || `—` }\`\n\n` +
-                `[$(settings-gear) Change](command:mistral-adapter.utilityModelMenu)`,
-            );
-            this.utilityItem.backgroundColor = undefined;
-        } else {
-            this.utilityItem.text = `$(hubot)`;
-            this.utilityItem.tooltip = md(
-                `**Mistral Utility** - not configured\n\n` +
-                `Chat titles, commit messages and other VS Code utility features use the Copilot default model.\n\n` +
-                `[$(check) Configure](command:mistral-adapter.configureUtilityModels) &nbsp; ` +
-                `[$(settings-gear) Select manually](command:mistral-adapter.utilityModelMenu)`,
-            );
-            this.utilityItem.backgroundColor = new vscode.ThemeColor( `statusBarItem.warningBackground` );
-        }
-        this.utilityItem.show();
     }
 }
