@@ -552,66 +552,6 @@ export function activate ( context: vscode.ExtensionContext ) {
     );
 
     context.subscriptions.push( logOutputChannel, usageStatusBar );
-
-    const participantHandler: vscode.ChatRequestHandler = async (
-        request: vscode.ChatRequest,
-        chatContext: vscode.ChatContext,
-        stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken,
-    ): Promise<void> => {
-        const messages: vscode.LanguageModelChatMessage[] = [];
-        const maybeChatResponseTurn2Ctor =
-            `ChatResponseTurn2` in vscode
-                ? ( vscode as unknown as { ChatResponseTurn2?: new ( ...args: unknown[] ) => unknown; } ).ChatResponseTurn2
-                : undefined;
-
-        const extractResponseText = ( responseParts: readonly unknown[] ): string => {
-            return responseParts
-                .filter( ( r ): r is vscode.ChatResponseMarkdownPart => {
-                    return r instanceof vscode.ChatResponseMarkdownPart;
-                } )
-                .map( r => {
-                    return r.value.value;
-                } )
-                .join( `` );
-        };
-
-        for ( const turn of chatContext.history ) {
-            if ( turn instanceof vscode.ChatRequestTurn ) {
-                messages.push( vscode.LanguageModelChatMessage.User( turn.prompt ) );
-            } else if ( turn instanceof vscode.ChatResponseTurn ) {
-                const text = extractResponseText( turn.response );
-                if ( text ) {
-                    messages.push( vscode.LanguageModelChatMessage.Assistant( text ) );
-                }
-            } else if ( maybeChatResponseTurn2Ctor && ( turn as object ) instanceof maybeChatResponseTurn2Ctor ) {
-                const responseParts = ( turn as { response: readonly unknown[]; } ).response;
-                const text = extractResponseText( responseParts );
-                if ( text ) {
-                    messages.push( vscode.LanguageModelChatMessage.Assistant( text ) );
-                }
-            }
-        }
-
-        messages.push( vscode.LanguageModelChatMessage.User( request.prompt ) );
-
-        try {
-            const response = await request.model.sendRequest( messages, undefined, token );
-            for await ( const chunk of response.stream ) {
-                if ( chunk instanceof vscode.LanguageModelTextPart ) {
-                    stream.markdown( chunk.value );
-                }
-            }
-        } catch ( error ) {
-            const userMessage = getUserFriendlyError( error );
-            stream.markdown( `Error: ${ userMessage }` );
-            logOutputChannel.error( `[Mistral] Chat participant error: ${ String( error ) }` );
-        }
-    };
-
-    const participant = vscode.chat.createChatParticipant( `mistral-api-for-copilot-adapter.mistral`, participantHandler );
-    participant.iconPath = vscode.Uri.file( `${ context.extensionUri.fsPath }/logo.png` );
-    context.subscriptions.push( participant );
 }
 
 export function deactivate () { }

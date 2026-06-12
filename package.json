@@ -111,15 +111,6 @@
         }
       }
     ],
-    "chatParticipants": [
-      {
-        "id": "mistral-api-for-copilot-adapter.mistral",
-        "name": "mistral",
-        "fullName": "Mistral AI",
-        "description": "Chat with a Mistral AI model",
-        "isSticky": true
-      }
-    ],
     "languageModelTools": [
       {
         "name": "mistral_searchCodebase",
@@ -239,8 +230,7 @@
   },
   "activationEvents": [
     "onStartupFinished",
-    "onLanguageModelChatProvider:mistral",
-    "onChatParticipant:mistral-api-for-copilot-adapter.mistral"
+    "onLanguageModelChatProvider:mistral"
   ],
   "dependencies": {
     "@mistralai/mistralai": "2.2.5",
