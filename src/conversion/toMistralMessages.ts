@@ -102,9 +102,10 @@ function processMessageParts (
         } else if ( part instanceof LanguageModelDataPart ) {
             if ( part.mimeType?.startsWith( `image/` ) ) {
                 imageParts.push( { mimeType: part.mimeType, data: part.data } );
-            } else {
-                textParts.push( `[data:${ part.mimeType }]` );
             }
+            // Non-image data parts (e.g. cache_control breakpoints, other VS Code
+            // metadata) are not prompt content - drop them. Stringifying them
+            // injected junk into the prompt body and broke Mistral prefix caching.
         } else if ( part instanceof LanguageModelToolCallPart ) {
             const mistralId = getOrCreateMistralToolCallId( map, part.callId );
             toolNameByCallId.set( mistralId, part.name );

@@ -81,12 +81,14 @@ describe( `toMistralMessages`, () => {
         expect( content[ 0 ].imageUrl ).toMatch( /^data:image\/png;base64,/ );
     } );
 
-    it( `stringifies non-image data part as text placeholder`, () => {
+    it( `drops non-image data parts instead of injecting them into the prompt`, () => {
         const msgs = toMistralMessages(
             [ userMsg( new LanguageModelDataPart( new Uint8Array( [ 0 ] ), `application/pdf` ) ) ],
             freshMap(),
         );
-        expect( ( msgs[ 0 ] as any ).content ).toBe( `[data:application/pdf]` );
+        const serialized = JSON.stringify( msgs );
+        expect( serialized ).not.toContain( `data:` );
+        expect( serialized ).not.toContain( `application/pdf` );
     } );
 
     it( `multimodal message includes text chunk then image chunk`, () => {

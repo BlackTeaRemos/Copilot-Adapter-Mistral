@@ -169,7 +169,7 @@ describe( `provideLanguageModelChatResponse`, () => {
         expect( text ).toBe( `Hello world` );
     } );
 
-    it( `strips think tags from streamed content`, async () => {
+    it( `routes think tags to thinking parts, not the answer`, async () => {
         ( provider as any ).client.chat.stream.mockResolvedValue(
             makeStream( { content: `<think>hidden</think>Answer`, finishReason: `stop` } ),
         );
@@ -177,11 +177,23 @@ describe( `provideLanguageModelChatResponse`, () => {
         await provider.provideLanguageModelChatResponse(
             baseModel, [ userMsg( new LanguageModelTextPart( `hi` ) ) ], {} as any, progress as any, noCancel,
         );
-        const text = progress.report.mock.calls.map( ( c: any ) => {
-            return c[ 0 ]?.value;
-        } ).join( `` );
-        expect( text ).toBe( `Answer` );
-        expect( text ).not.toContain( `hidden` );
+        const answer = progress.report.mock.calls
+            .filter( ( c: any ) => {
+                return c[ 0 ]?.constructor?.name !== `LanguageModelThinkingPart`;
+            } )
+            .map( ( c: any ) => {
+                return c[ 0 ]?.value;
+            } ).join( `` );
+        const thinking = progress.report.mock.calls
+            .filter( ( c: any ) => {
+                return c[ 0 ]?.constructor?.name === `LanguageModelThinkingPart`;
+            } )
+            .map( ( c: any ) => {
+                return c[ 0 ]?.value;
+            } ).join( `` );
+        expect( answer ).toBe( `Answer` );
+        expect( answer ).not.toContain( `hidden` );
+        expect( thinking ).toBe( `hidden` );
     } );
 
     it( `tracks token usage from promptTokens/completionTokens`, async () => {

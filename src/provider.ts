@@ -46,6 +46,20 @@ import { workspace } from 'vscode';
 
 const DEFAULT_MODEL_FALLBACK = `mistral-large-latest`;
 
+const UTILITY_INITIATOR_PREFIXES = [ `vscode.chat-title`, `vscode.chat-summary`, `vscode.editor`, `github.copilot.editsAgent.summary` ];
+
+function isInteractiveInitiator ( initiator: string | undefined ): boolean {
+    if ( !initiator ) {
+        return false;
+    }
+    if ( UTILITY_INITIATOR_PREFIXES.some( p => {
+        return initiator.startsWith( p );
+    } ) ) {
+        return false;
+    }
+    return true;
+}
+
 function pickDefaultModelId ( models: MistralModel[] ): string {
     if ( models.length === 0 ) {
         return ``;
@@ -355,15 +369,21 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             };
             assertChatStreamRequest( request );
 
-            this.lastModelName = foundModel.name;
-            this.lastModelId = model.id;
+            const initiator = ( options as unknown as { requestInitiator?: string } ).requestInitiator;
+            const isInteractiveChat = isInteractiveInitiator( initiator );
+            this.log.trace( `[Mistral] requestInitiator=${ initiator ?? `<undefined>` } interactive=${ isInteractiveChat }` );
+            if ( isInteractiveChat ) {
+                this.lastModelName = foundModel.name;
+                this.lastModelId = model.id;
+            }
 
             const stream = await streamChatCompletion( this.client, request, abortController.signal, this.log );
+            const requestUsage: UsageStats = { input: 0, output: 0, cached: 0, lastPrompt: 0 };
             const ctx: StreamContext = {
                 contentState: createContentDeltaState(),
                 toolCallState: createToolCallState(),
                 map: this.toolCallIdMap,
-                usage: this.tokensUsedThisSession,
+                usage: requestUsage,
             };
 
             for await ( const event of stream as AsyncIterable<CompletionEvent> ) {
@@ -375,8 +395,12 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
             if ( !token.isCancellationRequested ) {
                 flushContentDeltaState( ctx.contentState, this.log );
-                const { input, cached, lastPrompt } = this.tokensUsedThisSession;
-                this.reportTokenUsage( progress, this.tokensUsedThisSession );
+                const { input, output, cached, lastPrompt } = requestUsage;
+                this.tokensUsedThisSession.input += input;
+                this.tokensUsedThisSession.output += output;
+                this.tokensUsedThisSession.cached += cached;
+                this.tokensUsedThisSession.lastPrompt = lastPrompt;
+                this.reportTokenUsage( progress, requestUsage );
                 this.recordCalibration( model.id, lastPrompt, messages );
                 this.logCacheHit( cached, lastPrompt, input, model.id );
                 if ( ctx.truncated ) {
@@ -388,7 +412,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
                 updateStatusBar( this.statusBarItem, this.tokensUsedThisSession, this.lastModelName, this.lastModelId, this.calibration, true );
             }
             this.log.debug(
-                `[Mistral] stream complete - model=${ ctx.servedModel ?? model.id } input=${ this.tokensUsedThisSession.input } output=${ this.tokensUsedThisSession.output } cached=${ this.tokensUsedThisSession.cached }` +
+                `[Mistral] stream complete - model=${ ctx.servedModel ?? model.id } input=${ requestUsage.input } output=${ requestUsage.output } cached=${ requestUsage.cached }` +
                 ( ctx.truncated ? ` TRUNCATED` : `` ),
             );
         } catch ( error ) {
