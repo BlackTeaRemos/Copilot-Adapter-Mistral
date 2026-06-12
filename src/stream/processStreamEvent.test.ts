@@ -29,14 +29,45 @@ describe( `processStreamEvent`, () => {
         expect( ( progress.report.mock.calls[ 0 ][ 0 ] as LanguageModelTextPart ).value ).toBe( `hello` );
     } );
 
-    it( `joins array content parts`, () => {
+    it( `emits array content parts as text`, () => {
         const c = ctx();
         const progress = { report: vi.fn() };
         processStreamEvent(
             event( { choices: [ { delta: { content: [ { type: `text`, text: `a` }, { type: `text`, text: `b` } ] } } ] } ),
             c, progress as any, log,
         );
-        expect( ( progress.report.mock.calls[ 0 ][ 0 ] as LanguageModelTextPart ).value ).toBe( `ab` );
+        const text = progress.report.mock.calls.map( ( call: any ) => {
+            return call[ 0 ]?.value ?? ``;
+        } ).join( `` );
+        expect( text ).toBe( `ab` );
+    } );
+
+    it( `routes thinking content chunks to thinking parts`, () => {
+        const c = ctx();
+        const progress = { report: vi.fn() };
+        processStreamEvent(
+            event( { choices: [ { delta: { content: [
+                { type: `thinking`, thinking: [ { type: `text`, text: `reasoning` } ] },
+                { type: `text`, text: `Answer` },
+            ] } } ] } ),
+            c, progress as any, log,
+        );
+        const answer = progress.report.mock.calls
+            .filter( ( call: any ) => {
+                return call[ 0 ]?.constructor?.name !== `LanguageModelThinkingPart`;
+            } )
+            .map( ( call: any ) => {
+                return call[ 0 ]?.value ?? ``;
+            } ).join( `` );
+        const thinking = progress.report.mock.calls
+            .filter( ( call: any ) => {
+                return call[ 0 ]?.constructor?.name === `LanguageModelThinkingPart`;
+            } )
+            .map( ( call: any ) => {
+                return call[ 0 ]?.value ?? ``;
+            } ).join( `` );
+        expect( answer ).toBe( `Answer` );
+        expect( thinking ).toBe( `reasoning` );
     } );
 
     it( `takes the max promptTokens and accumulates completionTokens`, () => {

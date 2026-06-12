@@ -73,6 +73,10 @@ export class LanguageModelTextPart {
     constructor ( public readonly value: string ) { }
 }
 
+export class LanguageModelThinkingPart {
+    constructor ( public readonly value: string ) { }
+}
+
 export class LanguageModelToolCallPart {
     constructor (
         public readonly callId: string,

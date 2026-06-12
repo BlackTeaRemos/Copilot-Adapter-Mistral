@@ -1,8 +1,34 @@
-import type { CompletionEvent } from '@mistralai/mistralai/models/components';
+import type { CompletionEvent, ContentChunk } from '@mistralai/mistralai/models/components';
 import { Progress, LanguageModelResponsePart } from 'vscode';
 import type { ToolCallIdMap, UsageStats } from '../types.js';
 import { processContentDelta, ContentDeltaState } from './processContentDelta.js';
+import { reportThinking } from './thinkingPart.js';
 import { processToolCallDelta, flushToolCallState, ToolCallState } from './processToolCallDelta.js';
+
+function processContentChunk (
+    chunk: ContentChunk,
+    ctx: StreamContext,
+    progress: Progress<LanguageModelResponsePart>,
+    log: StreamLogger,
+): void {
+    const type = ( chunk as { type?: string } ).type;
+    if ( type === `thinking` ) {
+        const thinking = ( chunk as { thinking?: Array<{ type?: string; text?: string }> } ).thinking ?? [];
+        const text = thinking.map( t => {
+            return t.type === `text` || t.text !== undefined ? t.text ?? `` : ``;
+        } ).join( `` );
+        if ( text ) {
+            log.trace( `[Mistral] thinking chunk len=${ text.length }` );
+            reportThinking( text, progress, log );
+        }
+        return;
+    }
+    const text = ( chunk as { text?: string } ).text;
+    if ( typeof text === `string` && text ) {
+        log.trace( `[Mistral] content chunk len=${ text.length }` );
+        processContentDelta( text, ctx.contentState, progress, log );
+    }
+}
 
 export type StreamContext = {
     contentState: ContentDeltaState;
@@ -76,15 +102,15 @@ export function processStreamEvent (
     const delta = choice.delta;
 
     if ( delta?.content ) {
-        const content =
-            typeof delta.content === `string`
-                ? delta.content
-                : delta.content.map( c => {
-                    return ( `text` in c ? c.text ?? `` : `` );
-                } ).join( `` );
-        if ( content ) {
-            log.trace( `[Mistral] content delta len=${ content.length }` );
-            processContentDelta( content, ctx.contentState, progress, log );
+        if ( typeof delta.content === `string` ) {
+            if ( delta.content ) {
+                log.trace( `[Mistral] content delta len=${ delta.content.length }` );
+                processContentDelta( delta.content, ctx.contentState, progress, log );
+            }
+        } else {
+            for ( const chunk of delta.content ) {
+                processContentChunk( chunk as ContentChunk, ctx, progress, log );
+            }
         }
     }
 

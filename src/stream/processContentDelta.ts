@@ -1,12 +1,12 @@
 import { LanguageModelTextPart, Progress, LanguageModelResponsePart } from 'vscode';
+import { reportThinking } from './thinkingPart.js';
 
 export type ContentDeltaState = {
     thinkDepth: number;
-    thinkBuffer: string;
 };
 
 export function createContentDeltaState (): ContentDeltaState {
-    return { thinkDepth: 0, thinkBuffer: `` };
+    return { thinkDepth: 0 };
 }
 
 const THINK_OPEN = `<think>`;
@@ -27,7 +27,7 @@ export function processContentDelta (
     raw: string,
     state: ContentDeltaState,
     progress: Progress<LanguageModelResponsePart>,
-    log: { debug: ( msg: string ) => void; },
+    log: { debug: ( msg: string ) => void; info: ( msg: string ) => void; },
 ): void {
     let i = 0;
     while ( i < raw.length ) {
@@ -37,7 +37,7 @@ export function processContentDelta (
 
         if ( tagIdx === -1 ) {
             if ( state.thinkDepth > 0 ) {
-                state.thinkBuffer += raw.slice( i );
+                reportThinking( raw.slice( i ), progress, log );
             } else {
                 reportText( raw.slice( i ), progress, log );
             }
@@ -45,9 +45,8 @@ export function processContentDelta (
         }
 
         if ( state.thinkDepth > 0 ) {
-            state.thinkBuffer += raw.slice( i, tagIdx );
-            log.debug( `[Mistral] think block closed - buffered ${ state.thinkBuffer.length } chars, depth ${ state.thinkDepth } → ${ state.thinkDepth - 1 }` );
-            state.thinkBuffer = ``;
+            reportThinking( raw.slice( i, tagIdx ), progress, log );
+            log.debug( `[Mistral] think block closed - depth ${ state.thinkDepth } → ${ state.thinkDepth - 1 }` );
             state.thinkDepth--;
             i = tagIdx + THINK_CLOSE.length;
         } else {
@@ -63,8 +62,8 @@ export function flushContentDeltaState (
     state: ContentDeltaState,
     log: { debug: ( msg: string ) => void; },
 ): void {
-    if ( state.thinkBuffer.length > 0 ) {
-        log.debug( `[Mistral] thinking delta length (flush): ` + state.thinkBuffer.length );
-        state.thinkBuffer = ``;
+    if ( state.thinkDepth > 0 ) {
+        log.debug( `[Mistral] stream ended inside think block (depth ${ state.thinkDepth })` );
+        state.thinkDepth = 0;
     }
 }
