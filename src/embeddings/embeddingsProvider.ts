@@ -32,13 +32,21 @@ export function registerMistralEmbeddingsProviders (
 
         const disposables = EMBEDDING_MODELS.map( model => {
             return lm.registerEmbeddingsProvider!( model, {
-                async provideEmbeddings ( input: string[] ): Promise<Array<{ values: number[]; }>> {
+                async provideEmbeddings ( input: string[], token: vscode.CancellationToken ): Promise<Array<{ values: number[]; }>> {
+                    if ( token?.isCancellationRequested ) {
+                        return [];
+                    }
                     const client = await getClient();
                     if ( !client ) {
                         log.warn( `[Mistral] Embeddings requested but no API key is set.` );
                         return [];
                     }
+                    log.info( `[Mistral][probe] provideEmbeddings model=${ model } inputs=${ input.length }` );
                     const vectors = await createEmbeddings( client, model, input, { log } );
+                    if ( token?.isCancellationRequested ) {
+                        return [];
+                    }
+                    log.debug( `[Mistral][probe] provideEmbeddings done model=${ model } vectors=${ vectors.length }` );
                     return vectors.map( values => {
                         return { values };
                     } );

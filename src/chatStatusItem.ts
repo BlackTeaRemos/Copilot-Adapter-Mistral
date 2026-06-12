@@ -26,8 +26,6 @@ export class MistralChatStatus {
             this.log.info( `[Mistral] createChatStatusItem unavailable - chat status item disabled` );
             return;
         }
-        // The function may exist but throw when the chatStatusItem proposal is
-        // not enabled. Swallow it and fall back to no-op so activation survives.
         try {
             this.item = create( `mistral.chatStatus` );
             this.item.title = `Mistral`;
