@@ -85,8 +85,8 @@ describe( `extension`, () => {
             activate( mockContext );
             expect( window.createOutputChannel ).toHaveBeenCalledWith( `Mistral Models`, { log: true } );
             expect( window.createStatusBarItem ).toHaveBeenCalled();
-            // push call index 11: output channel + status bar
-            expect( mockContext.subscriptions.push.mock.calls[ 11 ] ).toHaveLength( 2 );
+            // push call index 12: output channel + status bar
+            expect( mockContext.subscriptions.push.mock.calls[ 12 ] ).toHaveLength( 2 );
         } );
 
         it( `creates the @mistral chat participant`, () => {
@@ -96,11 +96,11 @@ describe( `extension`, () => {
 
         it( `pushes participant disposable into context.subscriptions`, () => {
             activate( mockContext );
-            // 13 push calls: bundle(5), inline register, toggle command, embeddingsProvider,
-            // mistralBar(3 items), embeddingIndex, searchTool, authChangeListener,
+            // 14 push calls: bundle(5), inline register, toggle command, embeddingsProvider,
+            // terminalCompletions, mistralBar(3 items), embeddingIndex, searchTool, authChangeListener,
             // embeddingStatus.onChange, embeddingCommands, configWatcher, output+statusBar(2), participant(1)
-            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 13 );
-            expect( mockContext.subscriptions.push.mock.calls[ 12 ] ).toHaveLength( 1 );
+            expect( mockContext.subscriptions.push ).toHaveBeenCalledTimes( 14 );
+            expect( mockContext.subscriptions.push.mock.calls[ 13 ] ).toHaveLength( 1 );
         } );
     } );
 

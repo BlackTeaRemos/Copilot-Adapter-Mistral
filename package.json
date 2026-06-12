@@ -214,6 +214,12 @@
           "markdownDescription": "Default Mistral model ID (vendor-qualified, e.g. `mistral/mistral-small-latest`) written to `chat.utilitySmallModel` when you run __\"Mistral: Configure Utility Models\"__. Use __\"Mistral: Select Small Utility Model\"__ to pick from fetched models.",
           "order": 11
         },
+        "mistral.terminalCompletionEnabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "When enabled, Mistral suggests shell command completions in the integrated terminal using the small utility model (`chat.utilitySmallModel`). Off by default to avoid terminal-typing API calls. Requires a VS Code build that supports the terminal completion provider API.",
+          "order": 12
+        },
         "mistral.embeddingModel": {
           "type": "string",
           "enum": [

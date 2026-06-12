@@ -4,6 +4,7 @@ import { MistralInlineCompletionProvider } from './inlineCompletionProvider.js';
 import { InlineCompletionToggle } from './inlineCompletionToggle.js';
 import { getStatusCode, getErrorName, getErrorMessage } from './assertions/index.js';
 import { registerMistralEmbeddingsProviders } from './embeddings/embeddingsProvider.js';
+import { registerMistralTerminalCompletions } from './terminalCompletionProvider.js';
 import { CodebaseEmbeddingIndex } from './embeddings/codebaseIndex.js';
 import { EmbeddingStatus } from './embeddings/embeddingStatus.js';
 import { registerCodebaseSearchTool } from './embeddings/searchTool.js';
@@ -306,6 +307,7 @@ export function activate ( context: vscode.ExtensionContext ) {
         return provider.ensureClient( true );
     };
     context.subscriptions.push( registerMistralEmbeddingsProviders( getClient, logOutputChannel ) );
+    context.subscriptions.push( registerMistralTerminalCompletions( getClient, logOutputChannel ) );
 
     const getEmbeddingModel = (): EmbeddingModel => {
         return coerceEmbeddingModel( vscode.workspace.getConfiguration( `mistral` ).get( `embeddingModel` ) );
