@@ -14,7 +14,7 @@ export function formatModelName ( id: string ): string {
         .join( ` ` );
 }
 
-export function getChatModelInfo ( model: MistralModel ): LanguageModelChatInformation {
+export function getChatModelInfo ( model: MistralModel, isDefault: boolean = false ): LanguageModelChatInformation {
     const p = getModelPricing( model.id );
     // 1 AIC = $0.01 → $X per 1M tokens = X * 100 AICs per 1M tokens
     const usdToAic = ( usd: number ) => {
@@ -36,6 +36,10 @@ export function getChatModelInfo ( model: MistralModel ): LanguageModelChatInfor
         capabilities: {
             toolCalling: model.toolCalling,
             imageInput: model.supportsVision ?? false,
+            supportsToolCalling: model.toolCalling,
+            supportsImageToText: model.supportsVision ?? false,
         },
+        isUserSelectable: true,
+        isDefault,
     } as unknown as LanguageModelChatInformation;
 }

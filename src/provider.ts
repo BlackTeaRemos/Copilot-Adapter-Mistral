@@ -41,6 +41,28 @@ import { getMistralTokenizer } from './tokenizer/mistralTokenizer.js';
 import { computePromptCacheKey } from './promptCacheKey.js';
 import { setApiKey, signInWithBrowser, initClient, type AuthDeps } from './auth/index.js';
 import { updateStatusBar } from './statusBar.js';
+import { ModelCache } from './client/modelCache.js';
+import { workspace } from 'vscode';
+
+const DEFAULT_MODEL_FALLBACK = `mistral-large-latest`;
+
+function pickDefaultModelId ( models: MistralModel[] ): string {
+    if ( models.length === 0 ) {
+        return ``;
+    }
+    const configured = workspace.getConfiguration( `mistral` ).get<string>( `defaultModel` ) ?? ``;
+    if ( configured && models.some( m => {
+        return m.id === configured;
+    } ) ) {
+        return configured;
+    }
+    if ( models.some( m => {
+        return m.id === DEFAULT_MODEL_FALLBACK;
+    } ) ) {
+        return DEFAULT_MODEL_FALLBACK;
+    }
+    return models[ 0 ].id;
+}
 
 function extractText ( part: unknown ): string {
     if ( part instanceof LanguageModelTextPart ) {
@@ -67,6 +89,8 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
     private tokenizer: Tiktoken | null = null;
     private fetchedModels: MistralModel[] | null = null;
     private modelCacheTimestamp: number = 0;
+    private modelCache!: ModelCache;
+    private seededFromCache: boolean = false;
     private static readonly MODEL_CACHE_TTL_MS = 30 * 60 * 1000;
     private initPromise?: Promise<boolean>;
     private tokensUsedThisSession: UsageStats = { input: 0, output: 0, cached: 0, lastPrompt: 0 };
@@ -107,6 +131,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             trace: () => { }, appendLine: () => { }, dispose: () => { },
         } as unknown as LogOutputChannel;
         this.calibration = new TokenizerCalibration( context );
+        this.modelCache = new ModelCache( context, this.log );
         this.log.info( `[Mistral] Provider constructed` );
         if ( autoInit ) {
             this.log.info( `[Mistral] Auto-initializing client on activation` );
@@ -126,6 +151,9 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             },
             invalidateModelCache: () => {
                 this.fetchedModels = null;
+                this.modelCacheTimestamp = 0;
+                this.seededFromCache = false;
+                void this.modelCache.clear();
             },
             fireModelInfoChange: () => {
                 this._onDidChangeLanguageModelChatInformation.fire( undefined );
@@ -145,16 +173,35 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         return signInWithBrowser( this.authDeps() );
     }
 
+    private seedFromCache (): MistralModel[] | null {
+        if ( this.seededFromCache ) {
+            return this.fetchedModels;
+        }
+        this.seededFromCache = true;
+        const cached = this.modelCache.load();
+        if ( cached ) {
+            this.fetchedModels = cached;
+        }
+        return cached;
+    }
+
     public async fetchModels (): Promise<MistralModel[]> {
         const now = Date.now();
         if ( this.fetchedModels !== null && now - this.modelCacheTimestamp < MistralChatModelProvider.MODEL_CACHE_TTL_MS ) {
             return this.fetchedModels;
         }
         if ( !this.client ) {
-            return [];
+            return this.fetchedModels ?? [];
         }
-        this.fetchedModels = await fetchModels( this.client, this.log );
+        const fresh = await fetchModels( this.client, this.log );
+        if ( fresh.length === 0 && this.fetchedModels ) {
+            this.log.warn( `[Mistral] API returned no models; keeping ${ this.fetchedModels.length } cached` );
+            return this.fetchedModels;
+        }
+        this.fetchedModels = fresh;
         this.modelCacheTimestamp = now;
+        await this.modelCache.save( fresh );
+        this.log.info( `[Mistral][probe] models refreshed-from-api (n=${ fresh.length })` );
         this.log.debug( `[Mistral] Fetched models: ` + JSON.stringify( this.fetchedModels, null, 2 ) );
         return this.fetchedModels;
     }
@@ -166,6 +213,13 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         this.log.info( `[Mistral] provideLanguageModelChatInformation called (silent=` + options.silent + `)` );
         if ( token.isCancellationRequested ) {
             return [];
+        }
+
+        const seeded = this.seedFromCache();
+        if ( seeded && seeded.length > 0 ) {
+            this.log.info( `[Mistral] returning ${ seeded.length } cached models while refreshing` );
+            void this.refreshModelsInBackground();
+            return this.toModelInfos( seeded );
         }
 
         if ( this.initPromise ) {
@@ -188,12 +242,39 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
         const models = await this.fetchModels();
         this.log.info( `[Mistral] Returning ` + models.length + ` models` );
-        this.log.debug( `[Mistral] Returning model info: ` + JSON.stringify( models.map( model => {
-            return getChatModelInfo( model );
-        } ), null, 2 ) );
+        const infos = this.toModelInfos( models );
+        this.log.debug( `[Mistral] Returning model info: ` + JSON.stringify( infos, null, 2 ) );
+        return infos;
+    }
+
+    private toModelInfos ( models: MistralModel[] ): LanguageModelChatInformation[] {
+        const defaultId = pickDefaultModelId( models );
+        this.log.info( `[Mistral][probe] default flag set model=${ defaultId || `<none>` } (of ${ models.length })` );
         return models.map( model => {
-            return getChatModelInfo( model );
+            return getChatModelInfo( model, model.id === defaultId );
         } );
+    }
+
+    private async refreshModelsInBackground (): Promise<void> {
+        try {
+            if ( this.initPromise ) {
+                try {
+                    await this.initPromise;
+                } catch { }
+                this.initPromise = undefined;
+            }
+            const ok = await this.callInitClient( true );
+            if ( !ok ) {
+                return;
+            }
+            const before = this.fetchedModels?.length ?? 0;
+            await this.fetchModels();
+            const after = this.fetchedModels?.length ?? 0;
+            this.log.info( `[Mistral] background model refresh complete (before=${ before } after=${ after })` );
+            this._onDidChangeLanguageModelChatInformation.fire( undefined );
+        } catch ( error ) {
+            this.log.warn( `[Mistral] background model refresh failed: ` + String( error ) );
+        }
     }
 
     async provideLanguageModelChatResponse (

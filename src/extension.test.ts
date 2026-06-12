@@ -75,10 +75,10 @@ describe( `extension`, () => {
             expect( commands.registerCommand ).toHaveBeenCalledWith( `mistral-adapter.semanticSearch`, expect.any( Function ) );
         } );
 
-        it( `pushes provider + 3 commands + dispose handler bundled in first push call`, () => {
+        it( `pushes provider + 6 commands + dispose handler bundled in first push call`, () => {
             activate( mockContext );
-            // First push call is provider + manageApiKey + signIn + selectInlineCompletionModel + dispose handler
-            expect( mockContext.subscriptions.push.mock.calls[ 0 ] ).toHaveLength( 5 );
+            // First push call is provider + manageApiKey + configureUtilityModels + selectUtilityModel + selectUtilitySmallModel + signIn + selectInlineCompletionModel + dispose handler
+            expect( mockContext.subscriptions.push.mock.calls[ 0 ] ).toHaveLength( 8 );
         } );
 
         it( `creates output channel and status bar and tracks them in subscriptions`, () => {
