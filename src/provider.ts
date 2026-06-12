@@ -257,7 +257,13 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
 
         const initialized = await this.callInitClient( options.silent );
         if ( !initialized ) {
-            this.log.warn( `[Mistral] client not initialized` ); return [];
+            const known = this.fetchedModels ?? this.seedFromCache();
+            if ( known && known.length > 0 ) {
+                this.log.warn( `[Mistral] client not initialized - keeping ${ known.length } known models in picker to avoid fallback to another vendor` );
+                return this.toModelInfos( known );
+            }
+            this.log.warn( `[Mistral] client not initialized and no known models - picker will be empty` );
+            return [];
         }
         if ( token.isCancellationRequested ) {
             return [];
@@ -315,7 +321,8 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         this.toolCallIdMap = createToolCallIdMap();
 
         if ( !this.client ) {
-            progress.report( new LanguageModelTextPart( `Please add your Mistral API key to use Mistral AI.` ) );
+            this.log.warn( `[Mistral][probe] request for ${ model.id } answered locally (no client) - NOT forwarded to another vendor` );
+            progress.report( new LanguageModelTextPart( `Mistral is selected but not signed in. Add your Mistral API key to continue - this request was not sent to any other model.` ) );
             return;
         }
 
