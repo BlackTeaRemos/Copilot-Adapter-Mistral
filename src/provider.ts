@@ -42,6 +42,7 @@ import { computePromptCacheKey } from './promptCacheKey.js';
 import { setApiKey, signInWithBrowser, initClient, type AuthDeps } from './auth/index.js';
 import { updateStatusBar } from './statusBar.js';
 import { ModelCache } from './client/modelCache.js';
+import { MistralChatStatus } from './chatStatusItem.js';
 import { workspace } from 'vscode';
 
 const DEFAULT_MODEL_FALLBACK = `mistral-large-latest`;
@@ -104,6 +105,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
     private fetchedModels: MistralModel[] | null = null;
     private modelCacheTimestamp: number = 0;
     private modelCache!: ModelCache;
+    private chatStatus!: MistralChatStatus;
     private seededFromCache: boolean = false;
     private backgroundRefreshStarted: boolean = false;
     private lastInfoSignature: string = ``;
@@ -148,6 +150,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
         } as unknown as LogOutputChannel;
         this.calibration = new TokenizerCalibration( context );
         this.modelCache = new ModelCache( context, this.log );
+        this.chatStatus = new MistralChatStatus( this.log );
         this.log.info( `[Mistral] Provider constructed` );
         if ( autoInit ) {
             this.log.info( `[Mistral] Auto-initializing client on activation` );
@@ -411,6 +414,9 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             if ( this.statusBarItem ) {
                 updateStatusBar( this.statusBarItem, this.tokensUsedThisSession, this.lastModelName, this.lastModelId, this.calibration, true );
             }
+            if ( isInteractiveChat ) {
+                this.chatStatus.update( requestUsage, ctx.servedModel ?? foundModel.name );
+            }
             this.log.debug(
                 `[Mistral] stream complete - model=${ ctx.servedModel ?? model.id } input=${ requestUsage.input } output=${ requestUsage.output } cached=${ requestUsage.cached }` +
                 ( ctx.truncated ? ` TRUNCATED` : `` ),
@@ -518,6 +524,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
     public dispose (): void {
         this.tokenizer = null;
         this.statusBarItem?.hide();
+        this.chatStatus.dispose();
         this._onDidChangeLanguageModelChatInformation.dispose();
         this.client = null;
     }
