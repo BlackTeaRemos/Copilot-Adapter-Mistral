@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { UsageStats } from '../types.js';
 
 interface ChatStatusItemLike {
-    title: string | { label: string; link: string; helpText?: string };
+    title: string | { label: string; link: string; helpText?: string; };
     description: string;
     detail: string | undefined;
     tooltip: string | undefined;
@@ -21,7 +21,7 @@ export class MistralChatStatus {
     private item: ChatStatusItemLike | undefined;
 
     constructor ( private readonly log: vscode.LogOutputChannel ) {
-        const create = ( vscode.window as unknown as { createChatStatusItem?: CreateChatStatusItem } ).createChatStatusItem;
+        const create = ( vscode.window as unknown as { createChatStatusItem?: CreateChatStatusItem; } ).createChatStatusItem;
         if ( typeof create !== `function` ) {
             this.log.info( `[Mistral] createChatStatusItem unavailable - chat status item disabled` );
             return;

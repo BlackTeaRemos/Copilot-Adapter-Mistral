@@ -2,9 +2,6 @@ import * as vscode from 'vscode';
 import type { Mistral } from '@mistralai/mistralai';
 import { createEmbeddings, EMBEDDING_MODELS, type EmbeddingsLogger } from '../embeddings/mistralEmbeddings.js';
 
-// The embeddings API is a proposed VS Code API (`enabledApiProposals: ["embeddings"]`).
-// It is registered best-effort: where the host exposes it the providers light up,
-// elsewhere the call is a no-op so the extension still runs on stable VS Code.
 type LmWithEmbeddings = typeof vscode.lm & {
     registerEmbeddingsProvider?: (
         model: string,
@@ -12,13 +9,6 @@ type LmWithEmbeddings = typeof vscode.lm & {
     ) => vscode.Disposable;
 };
 
-/**
- * Registers Mistral embedding models with the proposed `lm` embeddings API so
- * other extensions can call `lm.computeEmbeddings('mistral-embed', …)`.
- *
- * @returns A disposable for all registrations, or a no-op disposable when the
- *          proposed API is unavailable.
- */
 export function registerMistralEmbeddingsProviders (
     getClient: () => Promise<Mistral | null>,
     log: EmbeddingsLogger,

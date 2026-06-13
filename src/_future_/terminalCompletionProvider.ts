@@ -6,7 +6,7 @@ const MAX_SUGGESTIONS = 5;
 
 interface TerminalCompletionItemLike {
     label: string;
-    replacementRange: readonly [number, number];
+    replacementRange: readonly [ number, number ];
     kind?: number;
 }
 
@@ -77,7 +77,7 @@ export function registerMistralTerminalCompletions (
     getClient: () => Promise<Mistral | null>,
     log: vscode.LogOutputChannel,
 ): vscode.Disposable {
-    const register = ( vscode.window as unknown as { registerTerminalCompletionProvider?: RegisterTerminalCompletionProvider } )
+    const register = ( vscode.window as unknown as { registerTerminalCompletionProvider?: RegisterTerminalCompletionProvider; } )
         .registerTerminalCompletionProvider;
     if ( typeof register !== `function` ) {
         log.info( `[Mistral] registerTerminalCompletionProvider unavailable - terminal completions disabled` );
@@ -107,7 +107,7 @@ export function registerMistralTerminalCompletions (
                 if ( token.isCancellationRequested ) {
                     return [];
                 }
-                const range: readonly [number, number] = [ 0, context.cursorIndex ];
+                const range: readonly [ number, number ] = [ 0, context.cursorIndex ];
                 return commands.map( cmd => {
                     return { label: cmd, replacementRange: range };
                 } );

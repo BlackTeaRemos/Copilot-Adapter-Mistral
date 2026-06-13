@@ -1,7 +1,5 @@
 export { DEFAULT_BROWSER_AUTH_API_BASE_URL, DEFAULT_BROWSER_AUTH_BASE_URL } from './constants.js';
 export type { Attempt } from './attempt.js';
-export type { BrowserOpener } from './browserOpener.js';
-export type { BrowserSignInDeps } from './browserSignInDeps.js';
 export { BrowserSignInError } from './browserSignInError.js';
 export type { BrowserSignInErrorCode } from './browserSignInErrorCode.js';
 export { BrowserSignInService } from './browserSignInService.js';

@@ -4,7 +4,7 @@ import { BrowserSignInError, BrowserSignInService } from './browserSignIn/index.
 import { enterApiKeyManually } from './enterApiKeyManually.js';
 import { storeAndActivate } from './storeAndActivate.js';
 
-async function attemptSignIn ( deps: AuthDeps, state: { signInUrl: string | undefined } ): Promise<string> {
+async function attemptSignIn ( deps: AuthDeps, state: { signInUrl: string | undefined; } ): Promise<string> {
     const { log } = deps;
     const cts = new CancellationTokenSource();
     try {
@@ -18,37 +18,35 @@ async function attemptSignIn ( deps: AuthDeps, state: { signInUrl: string | unde
                 const onCancel = token.onCancellationRequested( () => {
                     return cts.cancel();
                 } );
-                try {
-                    const abortController = new AbortController();
-                    cts.token.onCancellationRequested( () => {
-                        return abortController.abort();
-                    } );
-                    if ( cts.token.isCancellationRequested ) {
-                        abortController.abort();
-                    }
-                    const service = new BrowserSignInService( {
-                        log,
-                        signal: abortController.signal,
-                        onAttemptStarted: url => {
-                            state.signInUrl = url;
-                        },
-                        openBrowser: url => {
-                            return Promise.resolve( env.openExternal( Uri.parse( url ) ) );
-                        },
-                        onStatus: status => {
-                            const messages: Record<string, string> = {
-                                opening_browser: `Opening your browser…`,
-                                waiting_for_browser_sign_in: `Waiting for you to finish in the browser…`,
-                                exchanging: `Finishing sign-in…`,
-                                completed: `Signed in.`,
-                            };
-                            progress.report( { message: messages[ status ] } );
-                        },
-                    } );
-                    return await service.authenticate();
-                } finally {
-                    onCancel.dispose();
+                const abortController = new AbortController();
+                cts.token.onCancellationRequested( () => {
+                    return abortController.abort();
+                } );
+                if ( cts.token.isCancellationRequested ) {
+                    abortController.abort();
                 }
+                const service = new BrowserSignInService( {
+                    log,
+                    signal: abortController.signal,
+                    onAttemptStarted: url => {
+                        state.signInUrl = url;
+                    },
+                    openBrowser: url => {
+                        return Promise.resolve( env.openExternal( Uri.parse( url ) ) );
+                    },
+                    onStatus: status => {
+                        const messages: Record<string, string> = {
+                            opening_browser: `Opening your browser…`,
+                            waiting_for_browser_sign_in: `Waiting for you to finish in the browser…`,
+                            exchanging: `Finishing sign-in…`,
+                            completed: `Signed in.`,
+                        };
+                        progress.report( { message: messages[ status ] } );
+                    },
+                } );
+                const result = await service.authenticate();
+                onCancel.dispose();
+                return result;
             },
         );
         // The exchange step already proves the key is valid server-side, so we

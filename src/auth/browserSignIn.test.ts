@@ -21,9 +21,11 @@ function jsonResponse (
     return {
         ok: init.ok ?? ( status >= 200 && status < 300 ),
         status,
-        headers: { get: ( name: string ) => {
-            return headers[ name.toLowerCase() ] ?? null;
-        } },
+        headers: {
+            get: ( name: string ) => {
+                return headers[ name.toLowerCase() ] ?? null;
+            },
+        },
         json: async () => {
             return body;
         },

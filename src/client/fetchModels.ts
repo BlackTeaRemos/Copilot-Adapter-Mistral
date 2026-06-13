@@ -17,6 +17,10 @@ async function _fetchModels (
     log: MistralClientLogger,
 ): Promise<MistralModel[]> {
     const response = await client.models.list();
+    if ( !response.data ) {
+        log.error( `[Mistral] Failed to fetch models. Check API key and network connectivity.` );
+        return [];
+    }
 
     const byId = new Map<string, KnownModelCard>();
     for ( const model of response.data ?? [] ) {

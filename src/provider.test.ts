@@ -100,11 +100,11 @@ describe( `setApiKey`, () => {
         expect( listener ).toHaveBeenCalledTimes( 1 );
     } );
 
-    it( `still returns key if secret storage throws`, async () => {
+    it( `returns undefined if secret storage throws`, async () => {
         vi.spyOn( window, `showInputBox` ).mockResolvedValue( `valid-api-key-xyz` );
         vi.mocked( createMistralClient ).mockReturnValue( { models: { list: vi.fn().mockResolvedValue( {} ) } } as any );
         vi.spyOn( mockContext.secrets, `store` ).mockRejectedValue( new Error( `storage error` ) );
-        expect( await provider.setApiKey() ).toBe( `valid-api-key-xyz` );
+        expect( await provider.setApiKey() ).toBeUndefined();
     } );
 } );
 

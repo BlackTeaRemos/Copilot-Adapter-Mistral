@@ -11,8 +11,6 @@ import {
     POLL_INTERVAL_MS,
 } from './constants.js';
 import { Attempt } from './attempt.js';
-import { BrowserOpener } from './browserOpener.js';
-import { BrowserSignInDeps } from './browserSignInDeps.js';
 import { BrowserSignInError } from './browserSignInError.js';
 import { BrowserSignInStatus } from './browserSignInStatus.js';
 import { CreateProcessPayload } from './createProcessPayload.js';
@@ -21,6 +19,21 @@ import { PkceCodes } from './pkceCodes.js';
 import { parseJsonObject } from './parseJsonObject.js';
 import { parseRetryAfter } from './parseRetryAfter.js';
 import { validateUrlAgainstBase } from './validateUrlAgainstBase.js';
+
+export interface BrowserSignInDeps {
+    log: LogOutputChannel;
+    openBrowser: ( url: string ) => Promise<boolean>;
+    onStatus?: ( status: BrowserSignInStatus ) => void;
+    onAttemptStarted?: ( signInUrl: string, expiresAt: Date ) => void;
+    /** Abort signal so the caller (e.g. VSCode progress cancel) can stop polling. */
+    signal?: AbortSignal;
+    browserBaseUrl?: string;
+    apiBaseUrl?: string;
+    /** Injectable for tests. */
+    sleep?: ( ms: number ) => Promise<void>;
+    now?: () => number;
+}
+
 
 /**
  * Browser sign-in (PKCE polling) flow ported from mistral-vibe.
@@ -46,7 +59,7 @@ import { validateUrlAgainstBase } from './validateUrlAgainstBase.js';
  */
 export class BrowserSignInService {
     private readonly log: LogOutputChannel;
-    private readonly openBrowser: BrowserOpener;
+    private readonly openBrowser: ( url: string ) => Promise<boolean>;
     private readonly onStatus?: ( status: BrowserSignInStatus ) => void;
     private readonly onAttemptStarted?: ( signInUrl: string, expiresAt: Date ) => void;
     private readonly signal?: AbortSignal;

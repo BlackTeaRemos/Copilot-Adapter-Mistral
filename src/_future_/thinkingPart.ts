@@ -3,7 +3,7 @@ import { LanguageModelTextPart, Progress, LanguageModelResponsePart } from 'vsco
 
 type ThinkingPartCtor = new ( value: string ) => LanguageModelResponsePart;
 
-const thinkingPartCtor = ( vscode as unknown as { LanguageModelThinkingPart?: ThinkingPartCtor } ).LanguageModelThinkingPart;
+const thinkingPartCtor = ( vscode as unknown as { LanguageModelThinkingPart?: ThinkingPartCtor; } ).LanguageModelThinkingPart;
 
 let loggedFallback = false;
 
