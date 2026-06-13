@@ -1,5 +1,5 @@
 import { LanguageModelTextPart, Progress, LanguageModelResponsePart } from 'vscode';
-import { reportThinking } from './thinkingPart.js';
+import { reportThinking } from '../_future_/thinkingPart.js';
 
 export type ContentDeltaState = {
     thinkDepth: number;

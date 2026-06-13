@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { Mistral } from '@mistralai/mistralai';
-import { createEmbeddings, EMBEDDING_MODELS, type EmbeddingsLogger } from './mistralEmbeddings.js';
+import { createEmbeddings, EMBEDDING_MODELS, type EmbeddingsLogger } from '../embeddings/mistralEmbeddings.js';
 
 // The embeddings API is a proposed VS Code API (`enabledApiProposals: ["embeddings"]`).
 // It is registered best-effort: where the host exposes it the providers light up,

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { UsageStats } from './types.js';
+import type { UsageStats } from '../types.js';
 
 interface ChatStatusItemLike {
     title: string | { label: string; link: string; helpText?: string };

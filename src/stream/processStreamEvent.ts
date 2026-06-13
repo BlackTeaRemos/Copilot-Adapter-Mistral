@@ -2,7 +2,7 @@ import type { CompletionEvent, ContentChunk } from '@mistralai/mistralai/models/
 import { Progress, LanguageModelResponsePart } from 'vscode';
 import type { ToolCallIdMap, UsageStats } from '../types.js';
 import { processContentDelta, ContentDeltaState } from './processContentDelta.js';
-import { reportThinking } from './thinkingPart.js';
+import { reportThinking } from '../_future_/thinkingPart.js';
 import { processToolCallDelta, flushToolCallState, ToolCallState } from './processToolCallDelta.js';
 
 function processContentChunk (

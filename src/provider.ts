@@ -42,7 +42,8 @@ import { computePromptCacheKey } from './promptCacheKey.js';
 import { setApiKey, signInWithBrowser, initClient, type AuthDeps } from './auth/index.js';
 import { updateStatusBar } from './statusBar.js';
 import { ModelCache } from './client/modelCache.js';
-import { MistralChatStatus } from './chatStatusItem.js';
+import { MistralChatStatus } from './_future_/chatStatusItem.js';
+import { readModelConfiguration } from './_future_/proposedModelData.js';
 import { workspace } from 'vscode';
 
 const DEFAULT_MODEL_FALLBACK = `mistral-large-latest`;
@@ -349,10 +350,15 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             ? options.toolMode === LanguageModelChatToolMode.Required ? `any` : `auto`
             : undefined;
         const parallelToolCalls = shouldSendTools ? ( foundModel.supportsParallelToolCalls ?? false ) : undefined;
-        const modelOptions = toModelOptions( options.modelOptions );
+        const perModelConfig = readModelConfiguration( options );
+        const modelOptions = { ...toModelOptions( options.modelOptions ), ...( perModelConfig ?? {} ) };
+        if ( perModelConfig ) {
+            this.log.info( `[Mistral][probe] per-model configuration applied keys=${ Object.keys( perModelConfig ).join( `,` ) }` );
+        }
         const temperature = getNumberOption( modelOptions, `temperature` ) ?? foundModel.temperature ?? 0.7;
         const topP = getNumberOption( modelOptions, `topP` ) ?? foundModel.top_p;
         const safePrompt = getBooleanOption( modelOptions, `safePrompt` );
+        const maxTokensOverride = getNumberOption( modelOptions, `maxTokens` );
 
         const abortController = new AbortController();
         const cancellationDisposable = typeof token.onCancellationRequested === `function`
@@ -370,7 +376,7 @@ export class MistralChatModelProvider implements LanguageModelChatProvider {
             const request = {
                 model: model.id,
                 messages: mistralMessages,
-                maxTokens: Math.min( foundModel.defaultCompletionTokens, foundModel.maxOutputTokens ),
+                maxTokens: Math.min( maxTokensOverride ?? foundModel.defaultCompletionTokens, foundModel.maxOutputTokens ),
                 temperature, topP, safePrompt,
                 promptCacheKey: computePromptCacheKey( model.id, mistralMessages ),
                 tools: shouldSendTools && foundModel.toolCalling ? mistralTools : undefined,

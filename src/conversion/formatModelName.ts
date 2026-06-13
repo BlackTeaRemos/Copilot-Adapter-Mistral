@@ -1,6 +1,7 @@
 import type { LanguageModelChatInformation } from 'vscode';
 import type { MistralModel } from '../types.js';
 import { getModelPricing, formatPricingDetail } from './modelPricing.js';
+import { proposedModelInfoFields } from '../_future_/proposedModelData.js';
 
 export function formatModelName ( id: string ): string {
     return id
@@ -33,13 +34,6 @@ export function getChatModelInfo ( model: MistralModel, isDefault: boolean = fal
         maxInputTokens: model.maxInputTokens,
         maxOutputTokens: model.maxOutputTokens,
         version: `1.0.0`,
-        capabilities: {
-            toolCalling: model.toolCalling,
-            imageInput: model.supportsVision ?? false,
-            supportsToolCalling: model.toolCalling,
-            supportsImageToText: model.supportsVision ?? false,
-        },
-        isUserSelectable: true,
-        isDefault,
+        ...proposedModelInfoFields( model, isDefault ),
     } as unknown as LanguageModelChatInformation;
 }
