@@ -8,22 +8,17 @@ export function familyPrefix ( id: string ): string {
     return id.replace( /-(?:latest|\d{4})$/i, `` );
 }
 
-/** Joins all numeric runs in an id into a comparable version string. */
+/** Extracts the trailing version segment from a model ID for comparison. */
 function extractVersion ( id: string ): string {
-    return ( id.match( /(\d+(?:\.\d+)?)/g ) ?? [] ).join( `.` );
+    const m = id.match( /-(\d[\d.\-]*)$/ );
+    return m ? m[ 1 ].replace( /-/g, `.` ) : ``;
 }
 
 /**
- * Picks the canonical ID from a list of model IDs: prefer a `latest`
- * variant, else the highest numeric version.
+ * Picks the canonical ID from a list of model IDs by choosing the one
+ * with the highest trailing version number (date stamp or semver).
  */
 export function pickCanonical ( ids: string[] ): string {
-    const latest = ids.find( id => {
-        return /latest/i.test( id );
-    } );
-    if ( latest ) {
-        return latest;
-    }
     return ids.reduce( ( best, id ) => {
         return extractVersion( id ).localeCompare( extractVersion( best ), undefined, { numeric: true } ) > 0 ? id : best;
     } );

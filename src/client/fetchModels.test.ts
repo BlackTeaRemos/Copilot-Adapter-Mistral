@@ -76,11 +76,11 @@ describe( `fetchModels`, () => {
         expect( await fetchModels( mockClient( [] ), log ) ).toEqual( [] );
     } );
 
-    it( `prefers latest variant within family`, async () => {
+    it( `picks the highest-versioned variant within family`, async () => {
         const versioned = { ...chatModel, id: `mistral-large-2512` };
         const models = await fetchModels( mockClient( [ chatModel, versioned ] ), log );
         expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `mistral-large-latest` );
+        expect( models[ 0 ].id ).toBe( `mistral-large-2512` );
     } );
 
     it( `deduplicates models with the same name to one`, async () => {
@@ -114,7 +114,7 @@ describe( `fetchModels`, () => {
         expect( models[ 0 ].id ).toBe( `mistral-medium-latest` );
     } );
 
-    it( `deduplicates models with versioned IDs to latest`, async () => {
+    it( `deduplicates models with versioned IDs to highest version`, async () => {
         const mistralMedium35 = { ...chatModel, id: `mistral-medium-3-5`, name: `Mistral Medium 3 5` };
         const mistralMedium35Latest = { ...chatModel, id: `mistral-medium-3.5`, name: `Mistral Medium 3 5` };
         const mistralMedium3 = { ...chatModel, id: `mistral-medium-3`, name: `Mistral Medium 3 5` };
@@ -123,19 +123,19 @@ describe( `fetchModels`, () => {
 
         const models = await fetchModels( mockClient( [ mistralMedium35, mistralMedium35Latest, mistralMedium3, mistralMediumC21211R075, mistralVibeCliLatest ] ), log );
 
-        // Only the latest model should be returned.
+        // The highest-versioned model should be returned.
         expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `mistral-vibe-cli-latest` );
+        expect( models[ 0 ].id ).toBe( `mistral-medium-c21211-r0-75` );
     } );
 
-    it( `pickCanonical selects the latest model`, () => {
-        // Test with a latest model.
+    it( `pickCanonical selects by highest trailing version`, () => {
+        // All non-versioned: first wins.
         expect( pickCanonical( [ `codestral-latest`, `mistral-code-fim-latest`, `mistral-code-latest` ] ) ).toBe( `codestral-latest` );
 
-        // Test with versioned models.
-        expect( pickCanonical( [ `mistral-medium-3-5`, `mistral-medium-3.5`, `mistral-medium-3`, `mistral-medium-c21211-r0-75`, `mistral-vibe-cli-latest` ] ) ).toBe( `mistral-vibe-cli-latest` );
+        // Versioned beats non-versioned; highest version wins.
+        expect( pickCanonical( [ `mistral-medium-3-5`, `mistral-medium-3.5`, `mistral-medium-3`, `mistral-medium-c21211-r0-75`, `mistral-vibe-cli-latest` ] ) ).toBe( `mistral-medium-c21211-r0-75` );
 
-        // Test with versioned models without a latest model.
+        // Highest trailing version wins.
         expect( pickCanonical( [ `mistral-medium-3-5`, `mistral-medium-3.5`, `mistral-medium-3`, `mistral-medium-c21211-r0-75` ] ) ).toBe( `mistral-medium-c21211-r0-75` );
     } );
 } );

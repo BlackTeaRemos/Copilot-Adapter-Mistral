@@ -37,12 +37,20 @@ describe( `familyPrefix`, () => {
 } );
 
 describe( `pickCanonical`, () => {
-    it( `prefers a latest variant over versioned ids`, () => {
-        expect( pickCanonical( [ `mistral-large-2512`, `mistral-large-latest` ] ) ).toBe( `mistral-large-latest` );
+    it( `picks the higher date-stamped version`, () => {
+        expect( pickCanonical( [ `mistral-large-2055`, `mistral-large-2103` ] ) ).toBe( `mistral-large-2103` );
     } );
 
-    it( `picks the highest numeric version when no latest exists`, () => {
+    it( `picks the higher semver`, () => {
+        expect( pickCanonical( [ `mistral-medium-3.1`, `mistral-medium-3.5` ] ) ).toBe( `mistral-medium-3.5` );
+    } );
+
+    it( `picks the highest numeric version`, () => {
         expect( pickCanonical( [ `m-3`, `m-3-5`, `m-3.5`, `m-c21211-r0-75` ] ) ).toBe( `m-c21211-r0-75` );
+    } );
+
+    it( `picks a versioned id over a non-versioned one`, () => {
+        expect( pickCanonical( [ `mistral-large-2512`, `mistral-large-latest` ] ) ).toBe( `mistral-large-2512` );
     } );
 
     it( `returns the sole id for a singleton list`, () => {
@@ -63,19 +71,27 @@ describe( `CapabilityModelStore`, () => {
     } );
 
     it( `keeps only the canonical model per family`, () => {
+        store.insertModel( model( `mistral-large-2103` ) );
         store.insertModel( model( `mistral-large-2512` ) );
-        store.insertModel( model( `mistral-large-latest` ) );
         const all = store.getAllModels();
         expect( all ).toHaveLength( 1 );
-        expect( all[ 0 ].id ).toBe( `mistral-large-latest` );
+        expect( all[ 0 ].id ).toBe( `mistral-large-2512` );
     } );
 
     it( `ignores insertion order when picking the canonical`, () => {
-        store.insertModel( model( `mistral-large-latest` ) );
         store.insertModel( model( `mistral-large-2512` ) );
+        store.insertModel( model( `mistral-large-2103` ) );
         expect( store.getAllModels().map( m => {
             return m.id;
-        } ) ).toEqual( [ `mistral-large-latest` ] );
+        } ) ).toEqual( [ `mistral-large-2512` ] );
+    } );
+
+    it( `picks versioned id over latest-suffixed id`, () => {
+        store.insertModel( model( `mistral-large-latest` ) );
+        store.insertModel( model( `mistral-large-2512` ) );
+        const all = store.getAllModels();
+        expect( all ).toHaveLength( 1 );
+        expect( all[ 0 ].id ).toBe( `mistral-large-2512` );
     } );
 
     it( `indexes models by capability`, () => {
