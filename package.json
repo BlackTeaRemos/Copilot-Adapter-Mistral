@@ -233,7 +233,7 @@
     "onLanguageModelChatProvider:mistral"
   ],
   "dependencies": {
-    "@mistralai/mistralai": "2.2.5",
+    "@mistralai/mistralai": "2.2.6",
     "js-tiktoken": "^1.0.21"
   },
   "devDependencies": {
