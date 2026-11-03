@@ -1,0 +1,106 @@
+import js from '@eslint/js';
+import { defineConfig, type OxlintConfig } from 'oxlint';
+
+// Oxc's module parser enforces these two syntax restrictions directly.
+const PARSER_CHECKED_RULES = new Set( [ 'no-dupe-args', 'no-octal' ] );
+const JAVASCRIPT_RULES = Object.fromEntries( Object.entries( js.configs.recommended.rules ).filter( ( [ ruleName ] ) => {
+    return !PARSER_CHECKED_RULES.has( ruleName );
+} ) );
+
+const TYPESCRIPT_RULES: NonNullable<OxlintConfig[ 'rules' ]> = {
+    'typescript/ban-ts-comment': [ 'error', { minimumDescriptionLength: 10 } ],
+    'no-array-constructor': 'error',
+    'typescript/no-duplicate-enum-values': 'error',
+    'typescript/no-dynamic-delete': 'error',
+    'typescript/no-empty-object-type': 'error',
+    'typescript/no-explicit-any': 'error',
+    'typescript/no-extra-non-null-assertion': 'error',
+    'typescript/no-extraneous-class': 'error',
+    'typescript/no-invalid-void-type': 'error',
+    'typescript/no-misused-new': 'error',
+    'typescript/no-namespace': 'error',
+    'typescript/no-non-null-asserted-nullish-coalescing': 'error',
+    'typescript/no-non-null-asserted-optional-chain': 'error',
+    'typescript/no-non-null-assertion': 'error',
+    'typescript/no-require-imports': 'error',
+    'typescript/no-this-alias': 'error',
+    'typescript/no-unnecessary-type-constraint': 'error',
+    'typescript/no-unsafe-declaration-merging': 'error',
+    'typescript/no-unsafe-function-type': 'error',
+    'no-unused-expressions': 'error',
+    'no-unused-vars': 'error',
+    'no-useless-constructor': 'error',
+    'typescript/no-wrapper-object-types': 'error',
+    'typescript/prefer-as-const': 'error',
+    'typescript/prefer-literal-enum-member': 'error',
+    'typescript/prefer-namespace-keyword': 'error',
+    'typescript/triple-slash-reference': 'error',
+    'typescript/unified-signatures': 'error',
+    'typescript/adjacent-overload-signatures': 'error',
+    'typescript/array-type': 'error',
+    'typescript/ban-tslint-comment': 'error',
+    'typescript/class-literal-property-style': 'error',
+    'typescript/consistent-generic-constructors': 'error',
+    'typescript/consistent-indexed-object-style': 'error',
+    'typescript/consistent-type-assertions': 'error',
+    'typescript/consistent-type-definitions': 'error',
+    'typescript/no-confusing-non-null-assertion': 'error',
+    'no-empty-function': 'error',
+    'typescript/no-inferrable-types': 'error',
+    'typescript/prefer-for-of': 'error',
+    'typescript/prefer-function-type': 'error',
+};
+
+export default defineConfig( {
+    plugins: [ 'typescript' ],
+    jsPlugins: [ { name: '@stylistic', specifier: '@stylistic/eslint-plugin' } ],
+    categories: { correctness: 'off' },
+    options: { typeAware: true },
+    ignorePatterns: [
+        'node_modules/', '.vscode/', '**/temp/', '**/*.d.ts', '**/.*', '**/dist/',
+        '**/out/', '**/build/', '**/coverage/', '**/__mocks__/', '**/__tests__/',
+        '**/*.config.js', '**/*.config.mjs', '**/*.config.ts', '**/scripts/',
+        '**/private/', '**/AppData/**', '**/Temp/**',
+    ],
+    globals: {
+        window: 'readonly', document: 'readonly', __dirname: 'readonly', require: 'readonly',
+        module: 'readonly', exports: 'readonly', global: 'readonly', SVGSVGElement: 'readonly',
+        MAIN_WINDOW_VITE_DEV_SERVER_URL: 'readonly', MAIN_WINDOW_VITE_NAME: 'readonly',
+        setImmediate: 'readonly', clearImmediate: 'readonly', setTimeout: 'readonly',
+        clearTimeout: 'readonly', setInterval: 'readonly', JSX: 'readonly',
+    },
+    rules: {
+        curly: [ 'error', 'all' ],
+        'arrow-body-style': [ 'error', 'always' ],
+        '@stylistic/brace-style': [ 'error', '1tbs', { allowSingleLine: false } ],
+        '@stylistic/indent': [ 'error', 4, { MemberExpression: 'off', SwitchCase: 1 } ],
+        '@stylistic/quotes': [ 'error', 'backtick', { avoidEscape: true } ],
+        '@stylistic/semi': [ 'error', 'always' ],
+        '@stylistic/comma-dangle': [ 'error', 'always-multiline' ],
+        '@stylistic/space-before-function-paren': [ 'error', 'always' ],
+        '@stylistic/object-curly-spacing': [ 'error', 'always' ],
+        '@stylistic/array-bracket-spacing': [ 'error', 'always' ],
+        '@stylistic/key-spacing': [ 'error', { beforeColon: false, afterColon: true } ],
+        '@stylistic/no-trailing-spaces': 'error',
+        '@stylistic/eol-last': 'error',
+        '@stylistic/comma-spacing': [ 'error', { before: false, after: true } ],
+        '@stylistic/space-infix-ops': 'error',
+        '@stylistic/space-unary-ops': 'error',
+        '@stylistic/keyword-spacing': 'error',
+        '@stylistic/arrow-spacing': 'error',
+        '@stylistic/block-spacing': 'error',
+        'no-undef': 'off',
+        'no-unused-vars': 'off',
+    },
+    overrides: [
+        {
+            files: [ 'src/**/*.js', 'src/**/*.mjs' ],
+            globals: { console: 'readonly', process: 'readonly' },
+            rules: { ...JAVASCRIPT_RULES, 'no-undef': 'off', 'no-unused-vars': 'off' },
+        },
+        {
+            files: [ 'src/**/*.ts', 'src/**/*.tsx' ],
+            rules: TYPESCRIPT_RULES,
+        },
+    ],
+} );

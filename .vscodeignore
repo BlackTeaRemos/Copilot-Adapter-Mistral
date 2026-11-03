@@ -9,8 +9,8 @@ scripts/**
 .git/**
 .gitignore
 tsconfig.json
-vitest.config.js
-oxlint.config.js
+vitest.config.mjs
+oxlint.config.mts
 CHANGELOG.md
 README.md
 node_modules/**

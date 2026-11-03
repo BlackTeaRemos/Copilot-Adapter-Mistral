@@ -38,8 +38,8 @@
     "build": "tsdown && node -e \"require('fs').renameSync('dist/extension.cjs', 'dist/extension.js'); require('fs').renameSync('dist/extension.cjs.map', 'dist/extension.js.map')\"",
     "build:prod": "NODE_ENV=production tsdown && node -e \"const fs=require('fs'); fs.renameSync('dist/extension.cjs', 'dist/extension.js'); if(fs.existsSync('dist/extension.cjs.map')) fs.renameSync('dist/extension.cjs.map', 'dist/extension.js.map');\"",
     "check": "tsc --noEmit",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
+    "lint": "oxlint src",
+    "lint:fix": "oxlint src --fix",
     "test": "vitest run src",
     "watch": "tsdown --watch",
     "bump:patch": "node scripts/bump.mjs patch",
@@ -152,7 +152,7 @@
         "mistral.defaultModel": {
           "type": "string",
           "description": "Default model to use for chat",
-          "default": "mistral-large-latest",
+          "default": "mistral-large-4",
           "order": 2
         },
         "mistral.temperature": {
@@ -164,9 +164,9 @@
           "order": 3
         },
         "mistral.maxTokens": {
-          "type": "number",
-          "description": "Default maximum tokens for completions",
-          "default": 4096,
+          "type": ["integer", "null"],
+          "default": null,
+          "description": "Output limit, or null for the available model/context maximum. Request overrides take priority over per-model values, then this setting. Numeric limits must be positive integers.",
           "minimum": 1,
           "order": 4
         },
@@ -184,7 +184,7 @@
         "mistral.inlineCompletionModel": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Model ID for inline code completions (ghost text) served directly by Mistral's Fill-in-the-Middle API. Empty string = disabled (defer to other providers like Copilot). Set to a FIM-capable model (e.g. `codestral-latest`). Use the __\"Mistral: Select Inline Completion Model\"__ command to pick from fetched models. Usage is logged to the Mistral output channel.",
+          "markdownDescription": "Model ID for inline code completions (ghost text) served directly by Mistral's Fill-in-the-Middle API. Empty string = disabled (defer to other providers like Copilot). Set to a FIM-capable model (e.g. `codestral-2508`). Use the __\"Mistral: Select Inline Completion Model\"__ command to pick from fetched models. Usage is logged to the Mistral output channel.",
           "order": 7
         },
         "mistral.inlineCompletionEnabled": {
@@ -195,14 +195,14 @@
         },
         "mistral.utilityModel": {
           "type": "string",
-          "default": "mistral/mistral-large-latest",
-          "markdownDescription": "Default Mistral model ID (vendor-qualified, e.g. `mistral/mistral-large-latest`) written to `chat.utilityModel` when you run __\"Mistral: Configure Utility Models\"__. Use __\"Mistral: Select Utility Model\"__ to pick from fetched models.",
+          "default": "mistral/mistral-large-4",
+          "markdownDescription": "Default Mistral model ID (vendor-qualified, e.g. `mistral/mistral-large-4`) written to `chat.utilityModel` when you run __\"Mistral: Configure Utility Models\"__. Use __\"Mistral: Select Utility Model\"__ to pick from fetched models.",
           "order": 10
         },
         "mistral.utilitySmallModel": {
           "type": "string",
-          "default": "mistral/mistral-small-latest",
-          "markdownDescription": "Default Mistral model ID (vendor-qualified, e.g. `mistral/mistral-small-latest`) written to `chat.utilitySmallModel` when you run __\"Mistral: Configure Utility Models\"__. Use __\"Mistral: Select Small Utility Model\"__ to pick from fetched models.",
+          "default": "mistral/mistral-small-2603",
+          "markdownDescription": "Default Mistral model ID (vendor-qualified, e.g. `mistral/mistral-small-2603`) written to `chat.utilitySmallModel` when you run __\"Mistral: Configure Utility Models\"__. Use __\"Mistral: Select Small Utility Model\"__ to pick from fetched models.",
           "order": 11
         },
         "mistral.terminalCompletionEnabled": {
@@ -233,24 +233,24 @@
     "onLanguageModelChatProvider:mistral"
   ],
   "dependencies": {
-    "@mistralai/mistralai": "2.2.5",
+    "@mistralai/mistralai": "3.3.0",
     "js-tiktoken": "^1.0.21"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/node": "^25.6.0",
-    "@types/vscode": "^1.109.0",
-    "@typescript-eslint/eslint-plugin": "^8.60.1",
-    "@typescript-eslint/parser": "^8.60.1",
-    "@vscode/vsce": "^3.6.0",
-    "eslint-plugin-import": "^2.32.0",
-    "tsdown": "^0.22.2",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.4",
-    "vsce": "^2.15.0"
+    "@types/node": "^26.6.5",
+    "@types/vscode": "~1.140.0",
+    "@vscode/vsce": "^4.0.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "tsdown": "^0.23.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "eslint": "^10.13.0"
   },
   "engines": {
-    "vscode": "^1.109.0"
+    "vscode": "^1.140.0",
+    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
   }
 }

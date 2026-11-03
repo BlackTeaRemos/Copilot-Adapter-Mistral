@@ -1,4 +1,12 @@
 import { defineConfig } from 'tsdown';
+import mistralPackage from '@mistralai/mistralai/package.json' with { type: 'json' };
+
+// SDK features outside this adapter declare their integrations as optional peers.
+const OPTIONAL_SDK_PEERS = Object.entries( mistralPackage.peerDependenciesMeta ).filter( ( [ , metadata ] ) => {
+  return metadata.optional;
+} ).map( ( [ packageName ] ) => {
+  return packageName;
+} );
 
 const production = process.env.NODE_ENV === 'production';
 
@@ -8,7 +16,7 @@ export default defineConfig( {
   format: 'cjs',
   platform: 'node',
   deps: {
-    neverBundle: [ 'vscode' ],
+    neverBundle: [ 'vscode', ...OPTIONAL_SDK_PEERS ],
     alwaysBundle: [ '@mistralai/mistralai', 'js-tiktoken' ],
   },
   inputOptions: ( options ) => {
