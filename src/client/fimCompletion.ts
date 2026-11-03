@@ -1,15 +1,15 @@
 import { Mistral } from '@mistralai/mistralai';
 import type { MistralClientLogger } from './clientLogger.js';
 
-export type FimUsage = { promptTokens: number; completionTokens: number; totalTokens: number; };
+export interface FimUsage { promptTokens: number; completionTokens: number; totalTokens: number; }
 
-export type FimResult = {
+export interface FimResult {
     text: string;
     usage: FimUsage;
     servedModel: string;
-};
+}
 
-export type FimParams = {
+export interface FimParams {
     model: string;
     prompt: string;
     suffix?: string;
@@ -17,7 +17,7 @@ export type FimParams = {
     temperature?: number;
     stop?: string[];
     promptCacheKey?: string;
-};
+}
 
 export async function fimComplete (
     client: Mistral,

@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getMistralTokenizer, resetMistralTokenizer } from './mistralTokenizer.js';
 
-// Tests resolve assets from the repo root (extensionPath equivalent).
 const repoRoot = process.cwd();
 
 describe( `getMistralTokenizer`, () => {
@@ -18,7 +17,10 @@ describe( `getMistralTokenizer`, () => {
     } );
 
     it( `encodes text to a plausible token count`, () => {
-        const enc = getMistralTokenizer( repoRoot )!;
+        const enc = getMistralTokenizer( repoRoot );
+        if ( !enc ) {
+            throw new Error( `Expected the bundled tokenizer assets` );
+        }
         expect( enc.encode( `Hello world` ).length ).toBe( 2 );
         const dog = enc.encode( `The quick brown fox jumps over the lazy dog.` ).length;
         expect( dog ).toBeGreaterThan( 5 );
@@ -26,7 +28,10 @@ describe( `getMistralTokenizer`, () => {
     } );
 
     it( `round-trips encode/decode`, () => {
-        const enc = getMistralTokenizer( repoRoot )!;
+        const enc = getMistralTokenizer( repoRoot );
+        if ( !enc ) {
+            throw new Error( `Expected the bundled tokenizer assets` );
+        }
         const text = `function add(a, b) { return a + b; }`;
         expect( enc.decode( enc.encode( text ) ) ).toBe( text );
     } );
@@ -37,7 +42,6 @@ describe( `getMistralTokenizer`, () => {
 
     it( `returns null (cached) when assets are missing`, () => {
         expect( getMistralTokenizer( `/no/such/path` ) ).toBeNull();
-        // Cached null short-circuits even when a valid path follows.
         expect( getMistralTokenizer( repoRoot ) ).toBeNull();
     } );
 } );

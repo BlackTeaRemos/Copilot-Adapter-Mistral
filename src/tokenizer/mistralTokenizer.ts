@@ -21,7 +21,7 @@ import { Tiktoken } from 'js-tiktoken';
 
 let cached: Tiktoken | null | undefined;
 
-type TekkenMeta = { pat_str: string; version?: string; };
+interface TekkenMeta { pat_str: string; version?: string; }
 
 /**
  * Loads the native tekken tokenizer from the extension's `assets` directory.
@@ -45,7 +45,6 @@ export function getMistralTokenizer ( extensionPath: string ): Tiktoken | null {
     return cached;
 }
 
-/** Test-only: drop the cached instance so a later load re-reads the assets. */
 export function resetMistralTokenizer (): void {
     cached = undefined;
 }

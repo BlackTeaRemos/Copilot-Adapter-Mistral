@@ -1,125 +1,56 @@
 import type { CompletionEvent, ContentChunk } from '@mistralai/mistralai/models/components';
-import { Progress, LanguageModelResponsePart } from 'vscode';
-import type { ToolCallIdMap, UsageStats } from '../types.js';
-import { processContentDelta, ContentDeltaState } from './processContentDelta.js';
-import { reportThinking } from '../_future_/thinkingPart.js';
-import { processToolCallDelta, flushToolCallState, ToolCallState } from './processToolCallDelta.js';
+import type { Progress, LanguageModelResponsePart } from 'vscode';
+import { processContentDelta } from './content/processContentDelta.js';
+import { ProcessContentChunk } from './content/processContentChunk.js';
+import { processToolCallDelta, flushToolCallState } from './toolCalls/index.js';
+import { UsageAccumulator } from './usageAccumulator.js';
+import type { StreamContext } from './streamContext.js';
+import type { StreamLogger } from './streamLogger.js';
 
-function processContentChunk (
-    chunk: ContentChunk,
-    ctx: StreamContext,
-    progress: Progress<LanguageModelResponsePart>,
-    log: StreamLogger,
-): void {
-    const type = ( chunk as { type?: string } ).type;
-    if ( type === `thinking` ) {
-        const thinking = ( chunk as { thinking?: Array<{ type?: string; text?: string }> } ).thinking ?? [];
-        const text = thinking.map( t => {
-            return t.type === `text` || t.text !== undefined ? t.text ?? `` : ``;
-        } ).join( `` );
-        if ( text ) {
-            log.trace( `[Mistral] thinking chunk len=${ text.length }` );
-            reportThinking( text, progress, log );
-        }
-        return;
-    }
-    const text = ( chunk as { text?: string } ).text;
-    if ( typeof text === `string` && text ) {
-        log.trace( `[Mistral] content chunk len=${ text.length }` );
-        processContentDelta( text, ctx.contentState, progress, log );
-    }
-}
-
-export type StreamContext = {
-    contentState: ContentDeltaState;
-    toolCallState: ToolCallState;
-    map: ToolCallIdMap;
-    usage: UsageStats;
-    servedModel?: string;
-    truncated?: boolean;
-};
-
-export type StreamLogger = {
-    trace: ( msg: string ) => void;
-    debug: ( msg: string ) => void;
-    info: ( msg: string ) => void;
-    warn: ( msg: string ) => void;
-};
+export type { StreamContext } from './streamContext.js';
+export type { StreamLogger } from './streamLogger.js';
 
 export function processStreamEvent (
     event: CompletionEvent,
-    ctx: StreamContext,
+    context: StreamContext,
     progress: Progress<LanguageModelResponsePart>,
     log: StreamLogger,
 ): void {
     const chunk = event.data;
-
-    if ( chunk?.model && chunk.model !== ctx.servedModel ) {
-        ctx.servedModel = chunk.model;
+    if ( chunk?.model && chunk.model !== context.servedModel ) {
+        context.servedModel = chunk.model;
         log.info( `[Mistral] served by model: ${ chunk.model }` );
     }
-
     if ( chunk?.usage ) {
-        // Mistral sends absolute totals for the current request (not deltas).
-        // promptTokens already includes all prior context - take the max to avoid double-counting.
-        // completionTokens is cumulative across the conversation.
-        const prompt = chunk.usage.promptTokens ?? 0;
-        const completion = chunk.usage.completionTokens ?? 0;
-        const total = chunk.usage.totalTokens;
-        ctx.usage.input = Math.max( ctx.usage.input, prompt );
-        ctx.usage.lastPrompt = prompt;
-        ctx.usage.output += completion;
-        // Streaming chunk.usage is the plain UsageInfo type, which carries cache fields only via its
-        // catchall (raw snake_case). Mistral has used several shapes across versions - try each.
-        const rawUsage = chunk.usage as Record<string, unknown>;
-        const detail = ( rawUsage[ `prompt_tokens_details` ] ?? rawUsage[ `prompt_token_details` ] ) as
-            { cached_tokens?: number; } | undefined;
-        const cached = detail?.cached_tokens ?? ( rawUsage[ `num_cached_tokens` ] as number | undefined ) ?? 0;
-        if ( cached > 0 ) {
-            ctx.usage.cached = Math.max( ctx.usage.cached, cached );
-        }
-        log.trace(
-            `[Mistral] token usage - prompt: ${ prompt }, completion: ${ completion }, cached: ${ cached }` +
-            ( total !== undefined ? `, total: ${ total }` : `` ),
-        );
+        new UsageAccumulator().Record( chunk.usage, context.usage, log );
     }
-
     const choice = chunk?.choices?.[ 0 ];
     if ( !choice ) {
-        log.trace( `[Mistral] stream chunk has no choices, skipping` );
         return;
     }
-
     const finishReason = choice.finishReason;
     if ( finishReason ) {
-        log.trace( `[Mistral] stream chunk finishReason=${ finishReason }` );
-        if ( finishReason === `length` ) {
-            ctx.truncated = true;
-            log.warn( `[Mistral] response truncated - hit maxTokens limit` );
+        context.finishReason = finishReason;
+        if ( finishReason !== `stop` && finishReason !== `length` && finishReason !== `tool_calls` && !context.failureReason ) {
+            context.failureReason = finishReason;
         }
     }
-
+    if ( finishReason === `length` ) {
+        context.truncated = true;
+        log.warn( `[Mistral] response truncated - length termination` );
+    }
     const delta = choice.delta;
-
-    if ( delta?.content ) {
-        if ( typeof delta.content === `string` ) {
-            if ( delta.content ) {
-                log.trace( `[Mistral] content delta len=${ delta.content.length }` );
-                processContentDelta( delta.content, ctx.contentState, progress, log );
-            }
-        } else {
-            for ( const chunk of delta.content ) {
-                processContentChunk( chunk as ContentChunk, ctx, progress, log );
-            }
+    if ( typeof delta?.content === `string` ) {
+        processContentDelta( delta.content, context.contentState, progress, log );
+    } else if ( delta?.content ) {
+        for ( const content of delta.content ) {
+            ProcessContentChunk( content as ContentChunk, context, progress, log );
         }
     }
-
     if ( delta?.toolCalls ) {
-        log.trace( `[Mistral] tool call delta count=${ delta.toolCalls.length }` );
-        processToolCallDelta( delta.toolCalls, ctx.toolCallState, ctx.map, progress, log );
+        processToolCallDelta( delta.toolCalls, context.toolCallState, context.map, progress, log );
     }
-
-    if ( finishReason === `stop` || finishReason === `tool_calls` ) {
-        flushToolCallState( ctx.toolCallState, progress, log );
+    if ( !context.truncated && !context.failureReason && ( finishReason === `stop` || finishReason === `tool_calls` ) ) {
+        flushToolCallState( context.toolCallState, progress, log );
     }
 }

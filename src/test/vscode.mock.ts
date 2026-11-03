@@ -19,12 +19,14 @@ export interface LanguageModelChatInformation {
     };
 }
 
-export interface LanguageModelChatProvider { }
+export interface LanguageModelChatProvider {
+    readonly onDidChangeLanguageModelChatInformation?: Event<void>;
+}
 
-export type Event<T> = ( listener: ( e: T ) => void, thisArgs?: any, disposables?: any ) => any;
+export type Event<T> = ( listener: ( event: T ) => void, thisArgs?: unknown, disposables?: { dispose (): void }[] ) => { dispose (): void };
 
 export class EventEmitter<T> {
-    private listeners: Array<( e: T ) => void> = [];
+    private listeners: (( e: T ) => void)[] = [];
 
     public readonly event: Event<T> = ( listener: ( e: T ) => void ) => {
         this.listeners.push( listener );
@@ -107,6 +109,7 @@ export const window = {
     showInputBox: vi.fn(),
     showQuickPick: vi.fn(),
     showErrorMessage: vi.fn(),
+    showInformationMessage: vi.fn(),
     withProgress: vi.fn( async ( _opts: unknown, task: ( progress: unknown, token: unknown ) => unknown ) => {
         return task( { report: vi.fn() }, { isCancellationRequested: false, onCancellationRequested: () => {
             return  { dispose: vi.fn() };
@@ -169,7 +172,7 @@ export const env = {
 };
 
 export class CancellationTokenSource {
-    private _listeners: Array<() => void> = [];
+    private _listeners: (() => void)[] = [];
     public token = {
         isCancellationRequested: false,
         onCancellationRequested: ( listener: () => void ) => {

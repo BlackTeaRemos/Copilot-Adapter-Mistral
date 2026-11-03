@@ -1,8 +1,8 @@
-export type MistralMessageShape = {
+export interface MistralMessageShape {
     role?: string;
     content?: unknown;
     toolCalls?: unknown[];
-};
+}
 
 export function toMistralMessageShape ( val: unknown ): MistralMessageShape {
     if ( typeof val !== `object` || val === null ) {

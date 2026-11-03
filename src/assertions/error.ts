@@ -1,8 +1,8 @@
-export type ErrorLike = {
+export interface ErrorLike {
     statusCode?: number;
     name?: string;
     message?: string;
-};
+}
 
 export function isErrorLike ( val: unknown ): val is ErrorLike {
     return typeof val === `object` && val !== null;

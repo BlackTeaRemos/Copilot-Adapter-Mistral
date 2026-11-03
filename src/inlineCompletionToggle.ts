@@ -18,14 +18,15 @@ export class InlineCompletionToggle {
         return vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionModel` ) ?? ``;
     }
 
-    public render (): void { }
+    public render (): void {
+        return;
+    }
 
     public async enable (): Promise<void> {
         const copilotCfg = vscode.workspace.getConfiguration( COPILOT_SECTION );
         const inspect = copilotCfg.inspect<Record<string, boolean>>( COPILOT_ENABLE );
         const current = inspect?.globalValue;
 
-        // Back up the user's existing global value once, so disable() restores it exactly.
         if ( this.context.globalState.get( COPILOT_BACKUP_KEY ) === undefined ) {
             await this.context.globalState.update( COPILOT_BACKUP_KEY, current ?? null );
         }
@@ -42,7 +43,6 @@ export class InlineCompletionToggle {
         const copilotCfg = vscode.workspace.getConfiguration( COPILOT_SECTION );
         const backup = this.context.globalState.get<Record<string, boolean> | null>( COPILOT_BACKUP_KEY );
 
-        // Restore: if user had an explicit global value, put it back; otherwise clear our override.
         const restoreValue = backup === undefined ? undefined : ( backup ?? undefined );
         await copilotCfg.update( COPILOT_ENABLE, restoreValue, vscode.ConfigurationTarget.Global );
         await this.context.globalState.update( COPILOT_BACKUP_KEY, undefined );

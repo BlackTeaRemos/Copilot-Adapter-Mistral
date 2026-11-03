@@ -1,3 +1,4 @@
+import type { Mistral } from '@mistralai/mistralai';
 import { describe, expect, it, vi } from 'vitest';
 import { createEmbeddings, cosineSimilarity, rankBySimilarity, EMBED_BATCH_SIZE, isEmbeddingModel, coerceEmbeddingModel } from './mistralEmbeddings.js';
 
@@ -12,7 +13,7 @@ function mockClient ( handler: ( inputs: string[] ) => number[][] ) {
                 };
             } ),
         },
-    } as any;
+    } as unknown as Mistral;
 }
 
 describe( `embedding model helpers`, () => {
@@ -28,7 +29,7 @@ describe( `embedding model helpers`, () => {
         expect( coerceEmbeddingModel( undefined ) ).toBe( `codestral-embed` );
     } );
     it( `createEmbeddings rejects non-embedding models`, async () => {
-        const client = { embeddings: { create: vi.fn() } } as any;
+        const client = { embeddings: { create: vi.fn() } } as unknown as Mistral;
         await expect( createEmbeddings( client, `mistral-large-latest`, [ `x` ] ) ).rejects.toThrow( /not a Mistral embedding model/ );
         expect( client.embeddings.create ).not.toHaveBeenCalled();
     } );
@@ -97,7 +98,7 @@ describe( `createEmbeddings`, () => {
                     };
                 } ),
             },
-        } as any;
+        } as unknown as Mistral;
         const out = await createEmbeddings( client, `mistral-embed`, [ `a`, `b`, `c` ] );
         expect( out ).toEqual( [ [ 0 ], [ 1 ], [ 2 ] ] );
     } );
@@ -135,7 +136,6 @@ describe( `createEmbeddings`, () => {
                 return cancel;
             },
         } );
-        // First batch runs, then cancellation halts further batches.
         expect( client.embeddings.create ).toHaveBeenCalledTimes( 1 );
         expect( seen ).toEqual( [ EMBED_BATCH_SIZE ] );
     } );

@@ -1,6 +1,12 @@
+import type { Mistral } from '@mistralai/mistralai';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fetchModels, pickCanonical } from './fetchModels.js';
+import { fetchModels } from './fetchModels.js';
 import { CapabilityModelStore } from './modelStore.js';
+import { CreateAuthoredModelCards } from './modelDiscovery/createAuthoredModelCards.js';
+
+const AUTHORED_IDS = CreateAuthoredModelCards().map( card => {
+    return card.id;
+} );
 
 const log = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 
@@ -30,23 +36,31 @@ const embedModel = {
     capabilities: { completionChat: false, functionCalling: false, vision: false, completionFim: false },
 };
 
-function mockClient ( data: unknown[] ) {
-    return { models: { list: vi.fn().mockResolvedValue( { data } ) } } as any;
+function CreateMockClient ( data: unknown[] ): Mistral {
+    return { models: { list: vi.fn().mockResolvedValue( { data } ) } } as unknown as Mistral;
 }
 
 describe( `fetchModels`, () => {
-    it( `filters out models without completionChat`, async () => {
-        const models = await fetchModels( mockClient( [ chatModel, embedModel ] ), log );
-        expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `mistral-large-latest` );
+    it( `filters out models without completionChat while retaining the authored card`, async () => {
+        const models = await fetchModels( CreateMockClient( [ chatModel, embedModel ] ), log );
+        expect( models.map( model => {
+            return model.id;
+        } ) ).toEqual( [ ...AUTHORED_IDS, `mistral-large-latest` ] );
     } );
 
     it( `maps API fields to MistralModel`, async () => {
-        const [ model ] = await fetchModels( mockClient( [ chatModel ] ), log );
+        const models = await fetchModels( CreateMockClient( [ chatModel ] ), log );
+        const model = models.find( candidate => {
+            return candidate.id === chatModel.id;
+        } );
+        if ( !model ) {
+            throw new Error( `Expected the discovered chat model` );
+        }
         expect( model.name ).toBe( `Mistral Large` );
         expect( model.detail ).toBe( `Flagship model` );
-        expect( model.maxInputTokens ).toBe( 128000 );
-        expect( model.maxOutputTokens ).toBe( 16384 );
+        expect( model.maxInputTokens ).toBe( 123904 );
+        expect( model.maxContextWindowTokens ).toBe( 128000 );
+        expect( model.maxOutputTokens ).toBe( 127999 );
         expect( model.toolCalling ).toBe( true );
         expect( model.supportsParallelToolCalls ).toBe( true );
         expect( model.supportsVision ).toBe( true );
@@ -55,87 +69,80 @@ describe( `fetchModels`, () => {
     } );
 
     it( `falls back to formatModelName when name is null`, async () => {
-        const noName = { ...chatModel, name: null };
-        const [ model ] = await fetchModels( mockClient( [ noName ] ), log );
-        expect( model.name ).toBe( `Mistral Large` );
+        const models = await fetchModels( CreateMockClient( [ { ...chatModel, name: null } ] ), log );
+        expect( models.find( model => {
+            return model.id === chatModel.id;
+        } )?.name ).toBe( `Mistral Large` );
     } );
 
-    it( `applies MODEL_OUTPUT_LIMITS for known model IDs`, async () => {
+    it( `does not use a legacy rolling alias as an independent output ceiling`, async () => {
         const small = { ...chatModel, id: `mistral-small-latest`, name: `Mistral Small` };
-        const [ model ] = await fetchModels( mockClient( [ small ] ), log );
-        expect( model.maxOutputTokens ).toBe( 4096 );
+        const models = await fetchModels( CreateMockClient( [ small ] ), log );
+        expect( models.find( model => {
+            return model.id === small.id;
+        } )?.maxOutputTokens ).toBe( 127999 );
     } );
 
     it( `returns empty array on API error`, async () => {
-        const client = { models: { list: vi.fn().mockRejectedValue( new Error( `network` ) ) } } as any;
+        const client = { models: { list: vi.fn().mockRejectedValue( new Error( `network` ) ) } } as unknown as Mistral;
         const models = await fetchModels( client, log );
         expect( models ).toEqual( [] );
     } );
 
-    it( `returns empty array for empty data`, async () => {
-        expect( await fetchModels( mockClient( [] ), log ) ).toEqual( [] );
+    it( `retains the locally authored card when the API returns no models`, async () => {
+        const models = await fetchModels( CreateMockClient( [] ), log );
+        expect( models.map( model => {
+            return model.id;
+        } ) ).toEqual( AUTHORED_IDS );
     } );
 
-    it( `picks the highest-versioned variant within family`, async () => {
+    it( `preserves distinct releases instead of guessing canonical identity from suffixes`, async () => {
         const versioned = { ...chatModel, id: `mistral-large-2512` };
-        const models = await fetchModels( mockClient( [ chatModel, versioned ] ), log );
-        expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `mistral-large-2512` );
+        const models = await fetchModels( CreateMockClient( [ chatModel, versioned ] ), log );
+        expect( models.map( model => {
+            return model.id;
+        } ) ).toEqual( [ ...AUTHORED_IDS, chatModel.id, `mistral-large-2512` ] );
     } );
 
-    it( `deduplicates models with the same name to one`, async () => {
-        const a = { ...chatModel, id: `model-a-latest`, name: `Same Name` };
-        const b = { ...chatModel, id: `model-b`, name: `Same Name` };
-        const models = await fetchModels( mockClient( [ a, b ] ), log );
-        expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `model-a-latest` );
+    it( `keeps distinct model families with the same display name`, async () => {
+        const firstModel = { ...chatModel, id: `model-a-latest`, name: `Same Name` };
+        const secondModel = { ...chatModel, id: `model-b`, name: `Same Name` };
+        const models = await fetchModels( CreateMockClient( [ firstModel, secondModel ] ), log );
+        expect( models.map( model => {
+            return model.id;
+        } ) ).toEqual( [ ...AUTHORED_IDS, firstModel.id, secondModel.id ] );
     } );
 
-    it( `deduplicates models with the same name to latest`, async () => {
-        const codestralLatest = { ...chatModel, id: `codestral-latest`, name: `Codestral` };
-        const mistralCodeFimLatest = { ...chatModel, id: `mistral-code-fim-latest`, name: `Codestral` };
-        const mistralCodeLatest = { ...chatModel, id: `mistral-code-latest`, name: `Codestral` };
-
-        const models = await fetchModels( mockClient( [ codestralLatest, mistralCodeFimLatest, mistralCodeLatest ] ), log );
-
-        // Only the latest model (canonical) should be returned.
-        expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `codestral-latest` );
+    it( `keeps the distinct Codestral catalog entries`, async () => {
+        const codestral = { ...chatModel, id: `codestral-latest`, name: `Codestral` };
+        const codeFim = { ...chatModel, id: `mistral-code-fim-latest`, name: `Codestral` };
+        const code = { ...chatModel, id: `mistral-code-latest`, name: `Codestral` };
+        const models = await fetchModels( CreateMockClient( [ codestral, codeFim, code ] ), log );
+        expect( models.map( model => {
+            return model.id;
+        } ) ).toEqual( [ ...AUTHORED_IDS, codestral.id, codeFim.id, code.id ] );
     } );
 
-    it( `deduplicates models with the same name to latest`, async () => {
-        const mistralMediumLatest = { ...chatModel, id: `mistral-medium-latest`, name: `Mistral Medium` };
-        const mistralVibeCliWithTools = { ...chatModel, id: `mistral-vibe-cli-with-tools`, name: `Mistral Medium` };
-
-        const models = await fetchModels( mockClient( [ mistralMediumLatest, mistralVibeCliWithTools ] ), log );
-
-        // Only the latest model should be returned.
-        expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `mistral-medium-latest` );
+    it( `keeps a Vibe model distinct from the Medium family`, async () => {
+        const medium = { ...chatModel, id: `mistral-medium-latest`, name: `Mistral Medium` };
+        const vibe = { ...chatModel, id: `mistral-vibe-cli-with-tools`, name: `Mistral Medium` };
+        const models = await fetchModels( CreateMockClient( [ medium, vibe ] ), log );
+        expect( models.map( model => {
+            return model.id;
+        } ) ).toEqual( [ ...AUTHORED_IDS, medium.id, vibe.id ] );
     } );
 
-    it( `deduplicates models with versioned IDs to highest version`, async () => {
-        const mistralMedium35 = { ...chatModel, id: `mistral-medium-3-5`, name: `Mistral Medium 3 5` };
-        const mistralMedium35Latest = { ...chatModel, id: `mistral-medium-3.5`, name: `Mistral Medium 3 5` };
-        const mistralMedium3 = { ...chatModel, id: `mistral-medium-3`, name: `Mistral Medium 3 5` };
-        const mistralMediumC21211R075 = { ...chatModel, id: `mistral-medium-c21211-r0-75`, name: `Mistral Medium 3 5` };
-        const mistralVibeCliLatest = { ...chatModel, id: `mistral-vibe-cli-latest`, name: `Mistral Medium 3 5` };
-
-        const models = await fetchModels( mockClient( [ mistralMedium35, mistralMedium35Latest, mistralMedium3, mistralMediumC21211R075, mistralVibeCliLatest ] ), log );
-
-        // The highest-versioned model should be returned.
-        expect( models ).toHaveLength( 1 );
-        expect( models[ 0 ].id ).toBe( `mistral-medium-c21211-r0-75` );
+    it( `keeps independent versioned families instead of collapsing their display names`, async () => {
+        const identifiers = [
+            `mistral-medium-3-5`, `mistral-medium-3.5`, `mistral-medium-3`,
+            `mistral-medium-c21211-r0-75`, `mistral-vibe-cli-latest`,
+        ];
+        const models = await fetchModels( CreateMockClient( identifiers.map( identifier => {
+            return { ...chatModel, id: identifier, name: `Mistral Medium 3 5` };
+        } ) ), log );
+        expect( models.map( model => {
+            return model.id;
+        } ) ).toEqual( [ ...AUTHORED_IDS, ...identifiers.slice( 1 ) ] );
     } );
 
-    it( `pickCanonical selects by highest trailing version`, () => {
-        // All non-versioned: first wins.
-        expect( pickCanonical( [ `codestral-latest`, `mistral-code-fim-latest`, `mistral-code-latest` ] ) ).toBe( `codestral-latest` );
-
-        // Versioned beats non-versioned; highest version wins.
-        expect( pickCanonical( [ `mistral-medium-3-5`, `mistral-medium-3.5`, `mistral-medium-3`, `mistral-medium-c21211-r0-75`, `mistral-vibe-cli-latest` ] ) ).toBe( `mistral-medium-c21211-r0-75` );
-
-        // Highest trailing version wins.
-        expect( pickCanonical( [ `mistral-medium-3-5`, `mistral-medium-3.5`, `mistral-medium-3`, `mistral-medium-c21211-r0-75` ] ) ).toBe( `mistral-medium-c21211-r0-75` );
-    } );
 } );

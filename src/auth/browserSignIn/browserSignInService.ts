@@ -25,11 +25,9 @@ export interface BrowserSignInDeps {
     openBrowser: ( url: string ) => Promise<boolean>;
     onStatus?: ( status: BrowserSignInStatus ) => void;
     onAttemptStarted?: ( signInUrl: string, expiresAt: Date ) => void;
-    /** Abort signal so the caller (e.g. VSCode progress cancel) can stop polling. */
     signal?: AbortSignal;
     browserBaseUrl?: string;
     apiBaseUrl?: string;
-    /** Injectable for tests. */
     sleep?: ( ms: number ) => Promise<void>;
     now?: () => number;
 }
@@ -86,7 +84,6 @@ export class BrowserSignInService {
         } );
     }
 
-    /** Run the full flow: start, open browser, poll, exchange. Returns the API key. */
     public async authenticate (): Promise<string> {
         const attempt = await this.startAttempt();
         this.onAttemptStarted?.( attempt.signInUrl, new Date( attempt.expiresAt ) );
@@ -111,8 +108,9 @@ export class BrowserSignInService {
     }
 
     private async startAttempt (): Promise<Attempt> {
-        const verifier = PkceCodes.generateVerifier();
-        const challenge = await PkceCodes.generateChallenge( verifier );
+        const pkceCodes = new PkceCodes();
+        const verifier = pkceCodes.GenerateVerifier();
+        const challenge = await pkceCodes.GenerateChallenge( verifier );
 
         let response: Response;
         try {
@@ -171,8 +169,6 @@ export class BrowserSignInService {
     private async waitForCompletion ( attempt: Attempt ): Promise<string> {
         const deadline = attempt.expiresAt + CLOCK_SKEW_TOLERANCE_MS;
         let consecutiveFailures = 0;
-        // First iteration polls immediately (no leading sleep) so a user who
-        // finishes in the browser fast isn't held back by the poll interval.
         while ( this.now() < deadline ) {
             this.throwIfAborted();
             let payload: PollPayload;
@@ -218,13 +214,12 @@ export class BrowserSignInService {
         let response: Response;
         try {
             response = await fetch( validated, { signal: this.signal } );
-        } catch ( err ) {
+        } catch {
             throw new BrowserSignInError( `Browser sign-in status could not be retrieved.`, `poll_failed` );
         }
         if ( response.status === HTTP_GONE ) {
             return { status: `expired` };
         }
-        // Server is rate-limiting us: back off as instructed, keep waiting.
         if ( response.status === HTTP_TOO_MANY_REQUESTS ) {
             return { status: `pending`, retryAfterMs: parseRetryAfter( response, this.now ) };
         }
@@ -244,7 +239,6 @@ export class BrowserSignInService {
         };
     }
 
-    /** Exponential backoff with jitter for transient poll failures. */
     private backoffDelay ( attempt: number ): number {
         const base = Math.min( POLL_BACKOFF_BASE_MS * 2 ** ( attempt - 1 ), POLL_BACKOFF_MAX_MS );
         return base + Math.floor( Math.random() * 500 );

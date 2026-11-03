@@ -45,7 +45,7 @@ describe( `chunkDocument`, () => {
         for ( let i = 1; i < chunks.length; i++ ) {
             expect( chunks[ i ].startLine ).toBe( chunks[ i - 1 ].endLine + 1 );
         }
-        expect( chunks.at( -1 )!.endLine ).toBe( 25 );
+        expect( chunks.at( -1 )?.endLine ).toBe( 25 );
     } );
 } );
 

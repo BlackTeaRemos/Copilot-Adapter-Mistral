@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatModelName, getChatModelInfo } from './formatModelName.js';
+import { formatModelName } from './formatModelName.js';
+import { getChatModelInfo } from './modelInformation/getChatModelInfo.js';
 
 describe( `formatModelName`, () => {
     it( `capitalises single segment`, () => {
@@ -50,7 +51,7 @@ describe( `getChatModelInfo`, () => {
 
     it( `imageInput false when supportsVision undefined`, () => {
         const { supportsVision: _, ...noVision } = base;
-        expect( getChatModelInfo( noVision as any ).capabilities?.imageInput ).toBe( false );
+        expect( getChatModelInfo( noVision ).capabilities?.imageInput ).toBe( false );
     } );
 
     it( `uses tier for detail field instead of pricing`, () => {
@@ -59,8 +60,7 @@ describe( `getChatModelInfo`, () => {
             id: `mistral-large-latest`,
         } );
         expect( modelWithPricing.detail ).toBe( `Flagship` );
-        // The pricing field is set as a custom property, so we check it exists and contains tier info
-        expect( ( modelWithPricing as any ).pricing ).toContain( `Flagship` );
+        expect( modelWithPricing.pricing ).toContain( `Flagship` );
     } );
 
     it( `uses Mistral AI for detail when no pricing available`, () => {
@@ -69,6 +69,6 @@ describe( `getChatModelInfo`, () => {
             id: `nonexistent-model`,
         } );
         expect( modelWithoutPricing.detail ).toBe( `Mistral AI` );
-        expect( ( modelWithoutPricing as any ).pricing ).toBeUndefined();
+        expect( modelWithoutPricing.pricing ).toBeUndefined();
     } );
 } );

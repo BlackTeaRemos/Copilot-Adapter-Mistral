@@ -1,13 +1,11 @@
 import * as vscode from 'vscode';
-import type { CodebaseEmbeddingIndex, IndexEntry } from './codebaseIndex.js';
+import type { IndexEntry } from './codebaseIndex.js';
+import type { SearchableCodebaseIndex } from './searchableCodebaseIndex.js';
 import type { EmbeddingsLogger } from './mistralEmbeddings.js';
 
-/** Tool id - must match the `languageModelTools` contribution in package.json. */
 export const SEARCH_TOOL_NAME = `mistral_searchCodebase`;
 
-/** Drop hits weaker than this cosine score - they add noise, not signal. */
 export const MIN_SCORE = 0.25;
-/** Cap total returned snippet text so the tool stays within the model's budget. */
 export const MAX_RESULT_CHARS = 8000;
 
 export interface SearchToolInput {
@@ -39,7 +37,7 @@ export function limitByCharBudget<T extends { entry: { text: string; }; }> (
  * Renders search hits as a model-readable block: each snippet labelled with its
  * file path, line range, and similarity, followed by the code in a fence.
  */
-export function formatResults ( results: ReadonlyArray<{ entry: IndexEntry; score: number; }> ): string {
+export function formatResults ( results: readonly { entry: IndexEntry; score: number; }[] ): string {
     if ( results.length === 0 ) {
         return `No indexed matches. Build the Mistral embedding index first ("Mistral: Build Codebase Embedding Index").`;
     }
@@ -56,7 +54,7 @@ export function formatResults ( results: ReadonlyArray<{ entry: IndexEntry; scor
  * from registration so it can be unit-tested without the `vscode.lm` host.
  */
 export function createSearchTool (
-    index: CodebaseEmbeddingIndex,
+    index: SearchableCodebaseIndex,
     log: EmbeddingsLogger,
 ): vscode.LanguageModelTool<SearchToolInput> {
     const text = ( s: string ) => {
@@ -70,7 +68,6 @@ export function createSearchTool (
             }
             const maxResults = Math.min( Math.max( options.input.maxResults ?? 10, 1 ), 30 );
 
-            // Auto-build on first use so the model gets results without a manual step.
             await index.load();
             if ( index.getState() !== `ready` ) {
                 log.info( `[Mistral] searchCodebase: index empty - building before first search.` );
@@ -83,7 +80,6 @@ export function createSearchTool (
 
             log.info( `[Mistral] searchCodebase tool: "${ query }" (max ${ maxResults })` );
             const all = await index.search( query, maxResults, token );
-            // Prefer strong matches; if none clear the bar, fall back to the top few.
             const strong = all.filter( r => {
                 return r.score >= MIN_SCORE;
             } );
@@ -102,7 +98,7 @@ export function createSearchTool (
  * embedding index themselves.
  */
 export function registerCodebaseSearchTool (
-    index: CodebaseEmbeddingIndex,
+    index: SearchableCodebaseIndex,
     log: EmbeddingsLogger,
 ): vscode.Disposable {
     return vscode.lm.registerTool( SEARCH_TOOL_NAME, createSearchTool( index, log ) );

@@ -1,3 +1,4 @@
+import type { ExtensionContext } from 'vscode';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TokenizerCalibration } from './cacheCalibration.js';
 
@@ -13,16 +14,16 @@ function makeCtx ( stored: Record<string, unknown> = {} ) {
             } ),
         },
         _store: store,
-    } as any;
+    };
 }
 
 describe( `TokenizerCalibration`, () => {
-    let ctx: any;
+    let ctx: ReturnType<typeof makeCtx>;
     let cal: TokenizerCalibration;
 
     beforeEach( () => {
         ctx = makeCtx();
-        cal = new TokenizerCalibration( ctx );
+        cal = new TokenizerCalibration( ctx as unknown as ExtensionContext );
     } );
 
     it( `starts with zero samples and no scale`, () => {
@@ -39,7 +40,6 @@ describe( `TokenizerCalibration`, () => {
     } );
 
     it( `tracks a running mean of the token ratio`, () => {
-        // ratio is constant 1.2 → mean converges to 1.2.
         for ( let i = 0; i < 30; i++ ) {
             cal.record( `m`, 120, 100 );
         }
@@ -49,7 +49,6 @@ describe( `TokenizerCalibration`, () => {
 
     it( `withholds the scale until confidence passes the threshold`, () => {
         cal.record( `m`, 120, 100 );
-        // One sample → confidence below MIN_CONF, scale hidden.
         expect( cal.scale( `m` ) ).toBeUndefined();
         expect( cal.confidenceLevel( `m` ) ).toBeGreaterThan( 0 );
     } );
@@ -57,13 +56,13 @@ describe( `TokenizerCalibration`, () => {
     it( `persists each recorded sample to globalState`, () => {
         cal.record( `m`, 120, 100 );
         expect( ctx.globalState.update ).toHaveBeenCalled();
-        const saved = ctx._store[ `mistral.tokenizerCalibration.v1` ];
+        const saved = ctx._store[ `mistral.tokenizerCalibration.v1` ] as Record<string, { n: number }>;
         expect( saved.m.n ).toBe( 1 );
     } );
 
     it( `rehydrates prior samples from globalState`, () => {
         cal.record( `m`, 120, 100 );
-        const reloaded = new TokenizerCalibration( ctx );
+        const reloaded = new TokenizerCalibration( ctx as unknown as ExtensionContext );
         expect( reloaded.sampleCount( `m` ) ).toBe( 1 );
     } );
 

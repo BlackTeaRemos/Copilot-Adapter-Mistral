@@ -8,7 +8,7 @@ export function updateStatusBar (
     modelName: string,
     modelId: string,
     calibration: TokenizerCalibration,
-    authenticated: boolean = true,
+    authenticated = true,
 ): void {
     if ( !authenticated ) {
         const md = new MarkdownString(

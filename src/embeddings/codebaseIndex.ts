@@ -9,9 +9,7 @@ import {
 } from './mistralEmbeddings.js';
 
 export interface CodeChunk {
-    /** Workspace-relative file path. */
     file: string;
-    /** 1-based inclusive line range. */
     startLine: number;
     endLine: number;
     text: string;
@@ -21,7 +19,6 @@ export interface IndexEntry extends CodeChunk {
     vector: number[];
 }
 
-/** Per-file cache: content hash + its embedded chunks. */
 interface FileIndex {
     hash: string;
     chunks: IndexEntry[];
@@ -85,11 +82,8 @@ export function hashContent ( text: string ): string {
 }
 
 export interface ReindexPlan {
-    /** Files whose cached vectors can be reused unchanged. */
     reuse: string[];
-    /** New or modified files that must be (re)embedded. */
     embed: string[];
-    /** Cached files no longer present, to be dropped. */
     remove: string[];
 }
 
@@ -100,7 +94,7 @@ export interface ReindexPlan {
  * @param cached  Hashes from the persisted index.
  */
 export function planReindex (
-    current: ReadonlyArray<{ file: string; hash: string; }>,
+    current: readonly { file: string; hash: string; }[],
     cached: Readonly<Record<string, { hash: string; }>>,
 ): ReindexPlan {
     const reuse: string[] = [];
@@ -126,7 +120,6 @@ export interface BuildResult {
     reused: number;
 }
 
-/** Files matched/excluded when indexing a workspace. */
 const INCLUDE_GLOB = `**/*.{ts,tsx,js,jsx,mjs,cjs,py,go,rs,java,kt,c,h,cpp,hpp,cs,rb,php,swift,scala,sh,md,json,yaml,yml,toml,sql,vue,svelte}`;
 const EXCLUDE_GLOB = `**/{node_modules,.git,dist,out,build,.vscode-test,coverage,vendor,target,.next,.turbo}/**`;
 const MAX_FILES = 2000;
@@ -148,7 +141,6 @@ export class CodebaseEmbeddingIndex {
     private state: IndexState = `empty`;
     private readonly onDidChange = new vscode.EventEmitter<void>();
 
-    /** Fires whenever the index state or contents change (for status UI). */
     readonly onChange = this.onDidChange.event;
 
     constructor (
@@ -184,7 +176,6 @@ export class CodebaseEmbeddingIndex {
         return base ? vscode.Uri.joinPath( base, `embeddingIndex.json` ) : undefined;
     }
 
-    /** Loads a persisted index from workspace storage, if present. */
     async load (): Promise<void> {
         if ( this.loaded ) {
             return;
@@ -203,7 +194,6 @@ export class CodebaseEmbeddingIndex {
                 this.log.info( `[Mistral] Loaded embedding index: ${ this.fileCount } files / ${ this.chunkCount } chunks (model ${ this.indexedModel }).` );
             }
         } catch {
-            // No persisted index yet - first build will create one.
         }
         this.setState( this.chunkCount > 0 ? `ready` : `empty` );
     }
@@ -237,7 +227,6 @@ export class CodebaseEmbeddingIndex {
             throw new Error( `Mistral API key not set. Run "Mistral: Manage API Key" first.` );
         }
 
-        // A model switch invalidates every cached vector (different vector space).
         if ( this.indexedModel && this.indexedModel !== model ) {
             this.log.info( `[Mistral] Embedding model changed ${ this.indexedModel } → ${ model }; reindexing all files.` );
             this.files = {};
@@ -248,8 +237,7 @@ export class CodebaseEmbeddingIndex {
             progress?.report( { message: `Scanning workspace files…` } );
             const found = await vscode.workspace.findFiles( INCLUDE_GLOB, EXCLUDE_GLOB, MAX_FILES );
 
-            // Read + hash candidate files.
-            const current: Array<{ file: string; hash: string; text: string; }> = [];
+            const current: { file: string; hash: string; text: string; }[] = [];
             for ( const uri of found ) {
                 if ( token?.isCancellationRequested ) {
                     this.setState( this.chunkCount > 0 ? `ready` : `empty` ); return this.result( 0, 0 );
@@ -262,13 +250,12 @@ export class CodebaseEmbeddingIndex {
                     const text = new TextDecoder().decode( await vscode.workspace.fs.readFile( uri ) );
                     current.push( { file: vscode.workspace.asRelativePath( uri, false ), hash: hashContent( text ), text } );
                 } catch {
-                    // Unreadable file - skip.
                 }
             }
 
             const plan = planReindex( current, this.files );
             for ( const file of plan.remove ) {
-                delete this.files[ file ];
+                Reflect.deleteProperty( this.files, file );
             }
 
             const reusedChunks = plan.reuse.reduce( ( n, f ) => {
@@ -276,7 +263,6 @@ export class CodebaseEmbeddingIndex {
             }, 0 );
             this.log.info( `[Mistral] Reindex plan: embed ${ plan.embed.length } file(s), reuse ${ plan.reuse.length }, remove ${ plan.remove.length }.` );
 
-            // Chunk the files that need embedding.
             const byFile = new Map( current.map( c => {
                 return [ c.file, c ];
             } ) );
@@ -292,7 +278,6 @@ export class CodebaseEmbeddingIndex {
             }
 
             let embeddedChunks = 0;
-            // Group embedded chunks back by file.
             const grouped = new Map<string, IndexEntry[]>();
             if ( pending.length > 0 ) {
                 progress?.report( { message: `Embedding ${ pending.length } changed chunks…` } );
@@ -314,15 +299,19 @@ export class CodebaseEmbeddingIndex {
                         continue;
                     }
                     const chunk = pending[ i ];
-                    ( grouped.get( chunk.file ) ?? grouped.set( chunk.file, [] ).get( chunk.file )! ).push( { ...chunk, vector } );
+                    const fileChunks = grouped.get( chunk.file ) ?? [];
+                    fileChunks.push( { ...chunk, vector } );
+                    grouped.set( chunk.file, fileChunks );
                 }
                 embeddedChunks = pending.length;
             }
 
-            // Write back every (re)embedded file - including files that now
-            // chunk to nothing - so their stored hash and vectors stay current.
             for ( const file of plan.embed ) {
-                const hash = byFile.get( file )!.hash;
+                const currentFile = byFile.get( file );
+                if ( !currentFile ) {
+                    throw new Error( `Missing source file while updating the embedding index: ${ file }` );
+                }
+                const hash = currentFile.hash;
                 this.files[ file ] = { hash, chunks: grouped.get( file ) ?? [] };
             }
 
@@ -349,12 +338,11 @@ export class CodebaseEmbeddingIndex {
         return out;
     }
 
-    /** Embeds `query` and returns the top matching chunks. */
     async search (
         query: string,
         topK = 10,
         token?: vscode.CancellationToken,
-    ): Promise<Array<{ entry: IndexEntry; score: number; }>> {
+    ): Promise<{ entry: IndexEntry; score: number; }[]> {
         await this.load();
         const entries = this.allEntries();
         if ( entries.length === 0 ) {
@@ -384,7 +372,6 @@ export class CodebaseEmbeddingIndex {
         } );
     }
 
-    /** Clears the in-memory and persisted index. */
     async clear (): Promise<void> {
         this.files = {};
         this.indexedModel = undefined;

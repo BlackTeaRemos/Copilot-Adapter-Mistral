@@ -13,8 +13,9 @@ export function generateToolCallId (): string {
 }
 
 export function getOrCreateVsCodeToolCallId ( map: ToolCallIdMap, mistralId: string ): string {
-    if ( map.mistralToVsCode.has( mistralId ) ) {
-        return map.mistralToVsCode.get( mistralId )!;
+    const existingId = map.mistralToVsCode.get( mistralId );
+    if ( existingId !== undefined ) {
+        return existingId;
     }
     const vsCodeId = generateToolCallId();
     map.vsCodeToMistral.set( vsCodeId, mistralId );
@@ -23,8 +24,9 @@ export function getOrCreateVsCodeToolCallId ( map: ToolCallIdMap, mistralId: str
 }
 
 export function getOrCreateMistralToolCallId ( map: ToolCallIdMap, vsCodeId: string ): string {
-    if ( map.vsCodeToMistral.has( vsCodeId ) ) {
-        return map.vsCodeToMistral.get( vsCodeId )!;
+    const existingId = map.vsCodeToMistral.get( vsCodeId );
+    if ( existingId !== undefined ) {
+        return existingId;
     }
     const mistralId = generateToolCallId();
     map.vsCodeToMistral.set( vsCodeId, mistralId );

@@ -2,7 +2,7 @@ import type { ExtensionContext, LogOutputChannel } from 'vscode';
 import type { MistralModel } from '../types.js';
 
 const CACHE_KEY = `mistral.cachedModels`;
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 5;
 
 interface CachedModels {
     version: number;

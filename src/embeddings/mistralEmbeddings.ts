@@ -1,23 +1,18 @@
 import type { Mistral } from '@mistralai/mistralai';
 
-/** Mistral's embedding models. Only these may be used for embeddings. */
 export const EMBEDDING_MODELS = [ `codestral-embed`, `mistral-embed` ] as const;
 export type EmbeddingModel = typeof EMBEDDING_MODELS[ number ];
 
-/** Default embedding model. codestral-embed is tuned for code retrieval. */
 export const DEFAULT_EMBED_MODEL: EmbeddingModel = `codestral-embed`;
 
-/** True when `id` is a Mistral embedding model (vs a chat/FIM model). */
 export function isEmbeddingModel ( id: string ): boolean {
     return /embed/i.test( id );
 }
 
-/** Returns `model` if it is an embedding model, else the default embed model. */
 export function coerceEmbeddingModel ( model: string | undefined ): EmbeddingModel {
     return model && isEmbeddingModel( model ) ? model as EmbeddingModel : DEFAULT_EMBED_MODEL;
 }
 
-/** Inputs sent per embeddings request. Mistral accepts batches; keep them modest. */
 export const EMBED_BATCH_SIZE = 64;
 
 export interface EmbeddingsLogger {
@@ -28,11 +23,8 @@ export interface EmbeddingsLogger {
 }
 
 export interface CreateEmbeddingsOptions {
-    /** Optional fixed output dimension (codestral-embed supports up to 3072). */
     outputDimension?: number;
-    /** Returns true to abort before the next batch. */
     shouldCancel?: () => boolean;
-    /** Called after each batch with the count embedded so far. */
     onProgress?: ( done: number, total: number ) => void;
     log?: EmbeddingsLogger;
 }
@@ -66,7 +58,6 @@ export async function createEmbeddings (
         } );
         for ( let i = 0; i < res.data.length; i++ ) {
             const d = res.data[ i ];
-            // Fall back to positional order when the API omits `index`.
             const offset = d.index ?? i;
             out[ start + offset ] = d.embedding ?? [];
         }
@@ -75,7 +66,6 @@ export async function createEmbeddings (
     return out;
 }
 
-/** Cosine similarity of two equal-length vectors. Returns 0 for a zero vector. */
 export function cosineSimilarity ( a: readonly number[], b: readonly number[] ): number {
     const n = Math.min( a.length, b.length );
     let dot = 0, na = 0, nb = 0;
@@ -96,10 +86,10 @@ export function cosineSimilarity ( a: readonly number[], b: readonly number[] ):
  */
 export function rankBySimilarity<T> (
     query: readonly number[],
-    items: ReadonlyArray<{ item: T; vector: readonly number[]; }>,
+    items: readonly { item: T; vector: readonly number[]; }[],
     topK: number,
     minScore = 0,
-): Array<{ item: T; score: number; }> {
+): { item: T; score: number; }[] {
     return items
         .map( ( { item, vector } ) => {
             return  { item, score: cosineSimilarity( query, vector ) };

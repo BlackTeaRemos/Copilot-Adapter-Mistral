@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { GetUtilitySmallModelDefault } from '../extensionLifecycle/getUtilitySmallModelDefault.js';
 import type { Mistral } from '@mistralai/mistralai';
 
 const MIN_INPUT_LENGTH = 3;
@@ -33,7 +34,7 @@ function isEnabled (): boolean {
 }
 
 function smallModelId (): string {
-    const qualified = vscode.workspace.getConfiguration( `mistral` ).get<string>( `utilitySmallModel` ) || `mistral/mistral-small-latest`;
+    const qualified = GetUtilitySmallModelDefault();
     return qualified.startsWith( `mistral/` ) ? qualified.slice( `mistral/`.length ) : qualified;
 }
 
@@ -81,7 +82,9 @@ export function registerMistralTerminalCompletions (
         .registerTerminalCompletionProvider;
     if ( typeof register !== `function` ) {
         log.info( `[Mistral] registerTerminalCompletionProvider unavailable - terminal completions disabled` );
-        return { dispose () { } };
+        return { dispose () {
+            return;
+        } };
     }
 
     const provider: TerminalCompletionProviderLike = {
@@ -98,7 +101,7 @@ export function registerMistralTerminalCompletions (
                 return [];
             }
             const abort = new AbortController();
-            token.onCancellationRequested( () => {
+            const cancellationDisposable = token.onCancellationRequested( () => {
                 return abort.abort();
             } );
             try {
@@ -114,6 +117,8 @@ export function registerMistralTerminalCompletions (
             } catch ( error ) {
                 log.debug( `[Mistral] terminal completion error: ` + String( error ) );
                 return [];
+            } finally {
+                cancellationDisposable.dispose();
             }
         },
     };
@@ -124,6 +129,8 @@ export function registerMistralTerminalCompletions (
         return disposable;
     } catch ( error ) {
         log.info( `[Mistral] terminal completion registration failed (proposal not enabled): ` + String( error ) );
-        return { dispose () { } };
+        return { dispose () {
+            return;
+        } };
     }
 }

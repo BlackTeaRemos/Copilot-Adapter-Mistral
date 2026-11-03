@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { MistralChatModelProvider } from './provider.js';
 import { MistralInlineCompletionProvider } from './inlineCompletionProvider.js';
 import { InlineCompletionToggle } from './inlineCompletionToggle.js';
-import { getStatusCode, getErrorName, getErrorMessage } from './assertions/index.js';
 import { registerMistralEmbeddingsProviders } from './_future_/embeddingsProvider.js';
 import { registerMistralTerminalCompletions } from './_future_/terminalCompletionProvider.js';
 import { CodebaseEmbeddingIndex } from './embeddings/codebaseIndex.js';
@@ -10,200 +9,13 @@ import { EmbeddingStatus } from './embeddings/embeddingStatus.js';
 import { registerCodebaseSearchTool } from './embeddings/searchTool.js';
 import { EMBEDDING_MODELS, coerceEmbeddingModel, type EmbeddingModel } from './embeddings/mistralEmbeddings.js';
 import { MistralStatusBar } from './mistralStatusBar.js';
-
-function getUserFriendlyError ( error: unknown ): string {
-    const statusCode = getStatusCode( error );
-    if ( typeof statusCode === `number` ) {
-        switch ( statusCode ) {
-            case 400:
-                return `Bad request - the message or parameters sent to Mistral were invalid. Check model options and message format.`;
-            case 401:
-                return `Invalid API key. Run "Mistral: Manage API Key" to update it.`;
-            case 403:
-                return `Access denied. Your API key lacks permission for this model or feature. Check your Mistral plan at console.mistral.ai.`;
-            case 404:
-                return `Model not found. The requested model may have been deprecated or renamed. Reload the window to refresh the model list.`;
-            case 408:
-                return `Request timed out. The model took too long to respond - try a shorter prompt or smaller context.`;
-            case 413:
-                return `Context too large. Reduce the number of messages or attached files and try again.`;
-            case 422:
-                return `Invalid request parameters. Check that your model options (temperature, topP, etc.) are within valid ranges.`;
-            case 429:
-                return `Rate limit exceeded. Too many requests - wait a moment and try again, or check your quota at console.mistral.ai.`;
-            case 500:
-                return `Mistral server error. The service encountered an internal error - try again shortly.`;
-            case 502:
-                return `Mistral gateway error. The service is temporarily unreachable - try again in a few seconds.`;
-            case 503:
-                return `Mistral service unavailable. The API may be under maintenance - check status.mistral.ai for updates.`;
-            case 504:
-                return `Mistral gateway timeout. The service did not respond in time - try again or use a shorter prompt.`;
-        }
-        if ( statusCode >= 500 ) {
-            return `Mistral server error (${ statusCode }). Try again shortly or check status.mistral.ai.`;
-        }
-        if ( statusCode >= 400 ) {
-            return `Request rejected by Mistral (HTTP ${ statusCode }). Check the output channel for details.`;
-        }
-    }
-
-    const name = getErrorName( error );
-    if ( name === `AbortError` || name === `CancelledError` ) {
-        return `Request cancelled.`;
-    }
-
-    const message = getErrorMessage( error );
-    if ( message && message.length > 0 ) {
-        if ( message.toLowerCase().includes( `network` ) || message.toLowerCase().includes( `fetch` ) ) {
-            return `Network error - check your internet connection and try again.`;
-        }
-        return message;
-    }
-
-    return `An unexpected error occurred. Check the Mistral output channel for details.`;
-}
-
-async function validateInlineCompletionModel (
-    provider: MistralChatModelProvider,
-    log: vscode.LogOutputChannel,
-): Promise<void> {
-    const modelId: string = vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionModel` ) ?? ``;
-    if ( modelId === `` ) {
-        log.info( `[Mistral] Inline completions use Copilot default (mistral.inlineCompletionModel empty).` );
-        return;
-    }
-
-    await provider.ensureClient( true );
-    const models = await provider.fetchModels();
-    const fimModels = models.filter( m => {
-        return m.supportsCompletionFim;
-    } );
-    log.info( `[Mistral] FIM-capable models: ${ fimModels.map( m => {
-        return m.id;
-    } ).join( `, ` ) || `none` }` );
-
-    if ( !fimModels.some( m => {
-        return m.id === modelId;
-    } ) ) {
-        log.warn( `[Mistral] inlineCompletionModel "${ modelId }" not among FIM-capable models. Available: ${ fimModels.map( m => {
-            return m.id;
-        } ).join( `, ` ) || `none` }` );
-        vscode.window.showWarningMessage(
-            `Mistral: inline completion model "${ modelId }" is not available or does not support Fill-in-the-Middle. Check the Mistral output channel for available models.`,
-        );
-        return;
-    }
-    log.info( `[Mistral] Inline completions provided by Mistral FIM model "${ modelId }".` );
-}
-
-const UTILITY_NOTIFICATION_STATE_KEY = `mistral.utilityModelNotificationShown`;
-
-function getUtilityModelDefault (): string {
-    return vscode.workspace.getConfiguration( `mistral` ).get<string>( `utilityModel` ) || `mistral/mistral-large-latest`;
-}
-
-function getUtilitySmallModelDefault (): string {
-    return vscode.workspace.getConfiguration( `mistral` ).get<string>( `utilitySmallModel` ) || `mistral/mistral-small-latest`;
-}
-
-async function runSelectUtilityModel (
-    provider: MistralChatModelProvider,
-    log: vscode.LogOutputChannel,
-    settingKey: `utilityModel` | `utilitySmallModel`,
-    title: string,
-): Promise<void> {
-    const qp = vscode.window.createQuickPick();
-    qp.title = title;
-    qp.placeholder = `Fetching models…`;
-    qp.busy = true;
-    qp.show();
-
-    const models = await provider.fetchModels();
-    const chatModels = models.filter( m => {
-        return m.completionChat;
-    } );
-    const currentVsCodeValue: string = vscode.workspace.getConfiguration( `chat` ).get( settingKey ) ?? ``;
-    const currentMistralId = currentVsCodeValue.startsWith( `mistral/` )
-        ? currentVsCodeValue.slice( `mistral/`.length )
-        : ``;
-
-    const clearItem: vscode.QuickPickItem = {
-        label: `$(circle-slash) Clear (use Copilot default)`,
-        description: ``,
-        detail: `Remove Mistral from this utility slot`,
-        picked: currentVsCodeValue === `` || !currentVsCodeValue.startsWith( `mistral/` ),
-    };
-    const modelItems: vscode.QuickPickItem[] = chatModels.map( m => {
-        return {
-            label: m.name,
-            description: m.id,
-            detail: m.detail,
-            picked: m.id === currentMistralId,
-        };
-    } );
-
-    qp.items = [ clearItem, ...modelItems ];
-    qp.activeItems = qp.items.filter( i => {
-        return i.picked;
-    } );
-    qp.busy = false;
-    qp.placeholder = `Choose a Mistral model`;
-
-    qp.onDidAccept( async () => {
-        const selected = qp.selectedItems[ 0 ];
-        qp.hide();
-        if ( !selected ) {
-            return;
-        }
-        const newValue = selected === clearItem ? `` : `mistral/${ selected.description ?? `` }`;
-        await vscode.workspace.getConfiguration( `chat` ).update( settingKey, newValue || undefined, vscode.ConfigurationTarget.Global );
-        log.info( `[Mistral] ${ settingKey } set to "${ newValue || `(cleared)` }"` );
-    } );
-    qp.onDidHide( () => {
-        return qp.dispose();
-    } );
-}
-
-async function promptConfigureUtilityModels ( context: vscode.ExtensionContext, log: vscode.LogOutputChannel ): Promise<void> {
-    const cfg = vscode.workspace.getConfiguration( `chat` );
-    const utilityModel: string = cfg.get( `utilityModel` ) ?? ``;
-    const utilitySmallModel: string = cfg.get( `utilitySmallModel` ) ?? ``;
-
-    const needsConfig = !utilityModel.startsWith( `mistral/` ) || !utilitySmallModel.startsWith( `mistral/` );
-    if ( !needsConfig ) {
-        return;
-    }
-
-    const alreadyShown = context.globalState.get<boolean>( UTILITY_NOTIFICATION_STATE_KEY );
-    if ( alreadyShown ) {
-        return;
-    }
-    await context.globalState.update( UTILITY_NOTIFICATION_STATE_KEY, true );
-
-    log.info( `[Mistral] Prompting user to configure utility models (current: utilityModel="${ utilityModel }", utilitySmallModel="${ utilitySmallModel }")` );
-
-    const selection = await vscode.window.showInformationMessage(
-        `Mistral: Configure utility models (used for chat titles, commit messages, etc.) to use your Mistral API key?`,
-        `Configure`,
-        `Open Settings`,
-        `Dismiss`,
-    );
-
-    if ( selection === `Configure` ) {
-        const target = vscode.ConfigurationTarget.Global;
-        if ( !utilityModel.startsWith( `mistral/` ) ) {
-            await cfg.update( `utilityModel`, getUtilityModelDefault(), target );
-        }
-        if ( !utilitySmallModel.startsWith( `mistral/` ) ) {
-            await cfg.update( `utilitySmallModel`, getUtilitySmallModelDefault(), target );
-        }
-        log.info( `[Mistral] Utility models configured: utilityModel=${ getUtilityModelDefault() }, utilitySmallModel=${ getUtilitySmallModelDefault() }` );
-        vscode.window.showInformationMessage( `Mistral: Utility models configured. Chat title generation and commit messages now use Mistral.` );
-    } else if ( selection === `Open Settings` ) {
-        await vscode.commands.executeCommand( `workbench.action.openSettings`, `chat.utilityModel` );
-    }
-}
+import { GetUserFriendlyError } from './extensionLifecycle/getUserFriendlyError.js';
+import { ValidateInlineCompletionModel } from './extensionLifecycle/validateInlineCompletionModel.js';
+import { RunSelectUtilityModel } from './extensionLifecycle/runSelectUtilityModel.js';
+import { PromptConfigureUtilityModels } from './extensionLifecycle/promptConfigureUtilityModels.js';
+import { UTILITY_NOTIFICATION_STATE_KEY } from './extensionLifecycle/utilityNotificationStateKey.js';
+import { ResolveCatalogModel } from './modelSelection/resolveCatalogModel.js';
+export { deactivate } from './extensionLifecycle/deactivate.js';
 
 export function activate ( context: vscode.ExtensionContext ) {
     const logOutputChannel = vscode.window.createOutputChannel( `Mistral Models`, { log: true } );
@@ -219,13 +31,13 @@ export function activate ( context: vscode.ExtensionContext ) {
         } ),
         vscode.commands.registerCommand( `mistral-adapter.configureUtilityModels`, async () => {
             await context.globalState.update( UTILITY_NOTIFICATION_STATE_KEY, false );
-            await promptConfigureUtilityModels( context, logOutputChannel );
+            await PromptConfigureUtilityModels( context, logOutputChannel, provider );
         } ),
         vscode.commands.registerCommand( `mistral-adapter.selectUtilityModel`, async () => {
-            await runSelectUtilityModel( provider, logOutputChannel, `utilityModel`, `Select Utility Model (chat titles, feedback…)` );
+            await RunSelectUtilityModel( provider, logOutputChannel, `utilityModel`, `Select Utility Model (chat titles, feedback…)` );
         } ),
         vscode.commands.registerCommand( `mistral-adapter.selectUtilitySmallModel`, async () => {
-            await runSelectUtilityModel( provider, logOutputChannel, `utilitySmallModel`, `Select Small Utility Model (commit messages, quick tasks…)` );
+            await RunSelectUtilityModel( provider, logOutputChannel, `utilitySmallModel`, `Select Small Utility Model (commit messages, quick tasks…)` );
         } ),
         vscode.commands.registerCommand( `mistral-adapter.signIn`, async () => {
             await provider.signInWithBrowser();
@@ -243,6 +55,7 @@ export function activate ( context: vscode.ExtensionContext ) {
             } );
             const currentId: string = vscode.workspace.getConfiguration( `mistral` ).get( `inlineCompletionModel` ) ?? ``;
 
+            const currentModel = ResolveCatalogModel( fimModels, currentId );
             const defaultItem: vscode.QuickPickItem = {
                 label: `VS Code / Copilot default`,
                 description: ``,
@@ -254,7 +67,7 @@ export function activate ( context: vscode.ExtensionContext ) {
                     label: m.name,
                     description: m.id,
                     detail: m.detail,
-                    picked: m.id === currentId,
+                    picked: m.id === ( currentModel?.id ?? currentId ),
                 };
             } );
 
@@ -342,7 +155,7 @@ export function activate ( context: vscode.ExtensionContext ) {
         refreshMistralBar();
         if ( !utilityModelPromptFired && provider.isAuthenticated() ) {
             utilityModelPromptFired = true;
-            void promptConfigureUtilityModels( context, logOutputChannel );
+            void PromptConfigureUtilityModels( context, logOutputChannel, provider );
         }
     } ) );
     void embeddingIndex.load().then( () => {
@@ -373,14 +186,19 @@ export function activate ( context: vscode.ExtensionContext ) {
             vscode.window.showInformationMessage( `Mistral: no matches. Build the index first via "Mistral: Build Codebase Embedding Index".` );
             return;
         }
-        const items: Array<vscode.QuickPickItem & { uri: vscode.Uri; line: number; }> = results.map( r => {
+        const rootFolder = vscode.workspace.workspaceFolders?.[ 0 ];
+        if ( !rootFolder ) {
+            logOutputChannel.warn( `[Mistral] Search results could not be opened because the workspace was closed.` );
+            return;
+        }
+        const items: (vscode.QuickPickItem & { uri: vscode.Uri; line: number; })[] = results.map( r => {
             return {
                 label: `$(file-code) ${ r.entry.file }:${ r.entry.startLine }`,
                 description: `${ ( r.score * 100 ).toFixed( 0 ) }%`,
                 detail: r.entry.text.split( `\n` ).find( l => {
                     return l.trim().length > 0;
                 } )?.slice( 0, 120 ),
-                uri: vscode.Uri.joinPath( vscode.workspace.workspaceFolders![ 0 ].uri, r.entry.file ),
+                uri: vscode.Uri.joinPath( rootFolder.uri, r.entry.file ),
                 line: r.entry.startLine,
             };
         } );
@@ -414,14 +232,14 @@ export function activate ( context: vscode.ExtensionContext ) {
             try {
                 await runBuildIndex();
             } catch ( error ) {
-                vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` );
+                vscode.window.showErrorMessage( `Mistral: ${ GetUserFriendlyError( error ) }` );
             }
         } ),
         vscode.commands.registerCommand( `mistral-adapter.semanticSearch`, async () => {
             try {
                 await runSemanticSearch();
             } catch ( error ) {
-                vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` );
+                vscode.window.showErrorMessage( `Mistral: ${ GetUserFriendlyError( error ) }` );
             }
         } ),
         vscode.commands.registerCommand( `mistral-adapter.selectEmbeddingModel`, async () => {
@@ -469,7 +287,7 @@ export function activate ( context: vscode.ExtensionContext ) {
                     await vscode.commands.executeCommand( `mistral-adapter.clearEmbeddingIndex` );
                 }
             } catch ( error ) {
-                vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` );
+                vscode.window.showErrorMessage( `Mistral: ${ GetUserFriendlyError( error ) }` );
             }
         } ),
         vscode.commands.registerCommand( `mistral-adapter.utilityModelMenu`, async () => {
@@ -504,27 +322,29 @@ export function activate ( context: vscode.ExtensionContext ) {
                     await vscode.commands.executeCommand( `mistral-adapter.selectUtilitySmallModel` );
                 } else if ( pick.id === `configure` ) {
                     await context.globalState.update( UTILITY_NOTIFICATION_STATE_KEY, false );
-                    await promptConfigureUtilityModels( context, logOutputChannel );
+                    await PromptConfigureUtilityModels( context, logOutputChannel, provider );
                 }
             } catch ( error ) {
-                vscode.window.showErrorMessage( `Mistral: ${ getUserFriendlyError( error ) }` );
+                vscode.window.showErrorMessage( `Mistral: ${ GetUserFriendlyError( error ) }` );
             }
         } ),
     );
 
-    void validateInlineCompletionModel( provider, logOutputChannel );
+    void ValidateInlineCompletionModel( provider, logOutputChannel );
 
     provider.ensureClient( true ).then( client => {
         if ( client ) {
             utilityModelPromptFired = true;
-            void promptConfigureUtilityModels( context, logOutputChannel );
+            void PromptConfigureUtilityModels( context, logOutputChannel, provider );
         }
-    } ).catch( () => { } );
+    } ).catch( error => {
+        logOutputChannel.warn( `[Mistral] Configuration update failed: ${ String( error ) }` );
+    } );
 
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration( e => {
             if ( e.affectsConfiguration( `mistral.inlineCompletionModel` ) ) {
-                void validateInlineCompletionModel( provider, logOutputChannel );
+                void ValidateInlineCompletionModel( provider, logOutputChannel );
             }
             if (
                 e.affectsConfiguration( `mistral.inlineCompletionModel` ) ||
@@ -553,5 +373,3 @@ export function activate ( context: vscode.ExtensionContext ) {
 
     context.subscriptions.push( logOutputChannel, usageStatusBar );
 }
-
-export function deactivate () { }

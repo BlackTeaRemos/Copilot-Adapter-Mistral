@@ -12,10 +12,10 @@ describe( `toMistralRole`, () => {
     } );
 
     it( `maps numeric 3 (future System) → "system"`, () => {
-        expect( toMistralRole( 3 as any ) ).toBe( `system` );
+        expect( toMistralRole( 3 as LanguageModelChatMessageRole ) ).toBe( `system` );
     } );
 
     it( `maps unknown → "user"`, () => {
-        expect( toMistralRole( 99 as any ) ).toBe( `user` );
+        expect( toMistralRole( 99 as LanguageModelChatMessageRole ) ).toBe( `user` );
     } );
 } );

@@ -5,7 +5,7 @@ import { createEmbeddings, EMBEDDING_MODELS, type EmbeddingsLogger } from '../em
 type LmWithEmbeddings = typeof vscode.lm & {
     registerEmbeddingsProvider?: (
         model: string,
-        provider: { provideEmbeddings ( input: string[], token: vscode.CancellationToken ): vscode.ProviderResult<Array<{ values: number[]; }>>; },
+        provider: { provideEmbeddings ( input: string[], token: vscode.CancellationToken ): vscode.ProviderResult<{ values: number[]; }[]>; },
     ) => vscode.Disposable;
 };
 
@@ -17,12 +17,15 @@ export function registerMistralEmbeddingsProviders (
         const lm = vscode.lm as LmWithEmbeddings;
         if ( typeof lm.registerEmbeddingsProvider !== `function` ) {
             log.info( `[Mistral] lm.registerEmbeddingsProvider unavailable (proposed "embeddings" API not enabled) - skipping.` );
-            return { dispose () { } };
+            return { dispose () {
+                return;
+            } };
         }
 
+        const registerProvider = lm.registerEmbeddingsProvider.bind( lm );
         const disposables = EMBEDDING_MODELS.map( model => {
-            return lm.registerEmbeddingsProvider!( model, {
-                async provideEmbeddings ( input: string[], token: vscode.CancellationToken ): Promise<Array<{ values: number[]; }>> {
+            return registerProvider( model, {
+                async provideEmbeddings ( input: string[], token: vscode.CancellationToken ): Promise<{ values: number[]; }[]> {
                     if ( token?.isCancellationRequested ) {
                         return [];
                     }
@@ -54,6 +57,8 @@ export function registerMistralEmbeddingsProviders (
         };
     } catch ( err ) {
         log.info( `[Mistral] lm.registerEmbeddingsProvider failed (proposed API unavailable): ${ err instanceof Error ? err.message : String( err ) }` );
-        return { dispose () { } };
+        return { dispose () {
+            return;
+        } };
     }
 }
